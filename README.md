@@ -1,15 +1,11 @@
 # java-jq
 
-[jq](http://stedolan.github.io/jq/) for Java, using [JNA](https://github.com/java-native-access/jna) to bind to native JQ library.  
+java-jq is not a re-implementation of [jq](http://stedolan.github.io/jq/) in Java; instead, it embeds 
+the necessary jq and Oniguruma native libraries in a jar file, and then uses 
+[Java Native Access](https://github.com/java-native-access/jna) (JNA) to call the 
+embedded libraries in a Java-friendly way.
 
-Maven Central distribution of java-jq includes pre-compiled native JQ 1.5 libraries for all major platforms (Mac, Windows and Linux).
-
-
-## Background
-
-java-jq is not a re-implementation of jq in Java; instead, it embeds the necessary jq and Oniguruma native libraries in a jar file,
-and then uses [Java Native Access](https://github.com/java-native-access/jna) (JNA) to call the embedded libraries in a 
-Java-friendly way.
+The Maven Central distribution of java-jq includes native JQ 1.5 libraries for all major platforms (Mac, Windows and Linux).
 
 java-jq is heavily inspired by [jjq](https://github.com/bskaggs/jjq).
 
@@ -30,22 +26,22 @@ to the JQ library we created above, the JSON input you want to transform, and th
 want to execute.
 
 ```
- final JqRequest request = ImmutableJqRequest.builder() //
-         .lib(library) //
-         .input("{\"a\":[1,2,3,4,5],\"b\":\"hello\"}") //
-         .filter(".") //
-         .build();
+final JqRequest request = ImmutableJqRequest.builder() //
+        .lib(library) //
+        .input("{\"a\":[1,2,3,4,5],\"b\":\"hello\"}") //
+        .filter(".") //
+        .build();
 ```
 
 As a final step, let's execute the request.
 
 ```
-  final JqResponse response = request.execute();
-  if( response.hasError ) {
-     // display errors in response.getErrors()
-  } else {
-     System.out.println( "JQ output: " + response.getOutput);
-  }
+final JqResponse response = request.execute();
+if( response.hasError ) {
+   // display errors in response.getErrors()
+} else {
+   System.out.println( "JQ output: " + response.getOutput);
+}
 ```
 
 ## Installation
