@@ -1,0 +1,4 @@
+{
+    "message": "Updated the compile-ios.sh script to fix issues with local oniguruma path.",
+    "name": "Nico Williams"
+}

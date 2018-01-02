@@ -1,0 +1,22 @@
+[
+    {
+        "message": "Updated the compile-ios.sh script to fix issues with local oniguruma path.",
+        "name": "Nico Williams"
+    },
+    {
+        "message": "Update AUTHORS",
+        "name": "Nicolas Williams"
+    },
+    {
+        "message": "Added rawfile\n\nIn passing, clean remnants of argfile from slurpfile docs.",
+        "name": "Nicolas Williams"
+    },
+    {
+        "message": "Revert \"reduce: handle empty updates (fix #1313)\"\n\nThis reverts commit e24af3c78e78a3aab05a2800d825d56f1d842b1b.\n\nWhile the semantics are desirable, there is no way to implement them\nefficiently.  The reason is that in order to handle backtracking (empty)\nfrom the state update expression, we have to retain a reference to the\nreduction state value in order to restore it upon backtracking.\nRetaining a reference to the reduction state kills performance by\ncausing lots of additional memory allocations and garbage because the\ninput to the update expression will always have at least two references,\nthus no changes to it can be done in-place, and all changes end up being\nCoW changes.\n\nAvoiding this is the very reason for the LOADVN instruction (leaving\n`null` in the variable loaded from).",
+        "name": "Nicolas Williams"
+    },
+    {
+        "message": "Fix import as $data linking",
+        "name": "Nicolas Williams"
+    }
+]

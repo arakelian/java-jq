@@ -1,0 +1,52 @@
+// docker-junit-rule
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+}
+
+plugins {
+    id 'java'
+    id 'maven'
+    id 'signing'
+    id 'eclipse'
+    id 'idea'
+
+    // keep dependencies up-to-date!
+    id 'com.github.ben-manes.versions' version '0.17.0'
+
+    // useful for creating immutable java beans
+    id 'org.inferred.processors' version '1.2.15'
+
+    // to ensure clean code
+    id "net.ltgt.errorprone" version "0.0.13"
+
+    // for deployment to Maven Central
+    id "io.codearte.nexus-staging" version "0.11.0"
+}
+
+group   = 'com.arakelian'
+
+// common gradle code shared between projects
+apply from: "gradle/core.gradle"
+
+dependencies {
+    processor 'org.immutables:value:2.5.6'
+
+    // common stuff
+    compile 'net.java.dev.jna:jna:4.5.1'
+    compile 'com.google.guava:guava:23.4-jre'
+
+
+    // logging
+    testCompile 'org.apache.logging.log4j:log4j-api:2.9.1'
+    testCompile 'org.apache.logging.log4j:log4j-core:2.9.1'
+    testCompile 'org.apache.logging.log4j:log4j-slf4j-impl:2.9.1'
+    testCompile 'org.slf4j:jcl-over-slf4j:1.7.25'
+    testCompile 'org.slf4j:jul-to-slf4j:1.7.25'
+    compile     'org.slf4j:slf4j-api:1.7.25'
+
+    // for unit testing
+    testCompile 'junit:junit:4.12'
+}

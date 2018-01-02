@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project>
+	<owner></owner>
+	<copyright><![CDATA[Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+]]></copyright>
+	<header contentId="org.eclipse.pde.compositeCheatSheet" excluded="true" />
+	<header contentId="org.eclipse.egit.contenttype.gitignore" excluded="true" />
+	<header contentId="org.eclipse.pde.fragmentManifest" excluded="true" />
+	<header contentId="org.eclipse.ltk.core.refactoring.refactoringIndex" excluded="true" />
+	<header contentId="org.eclipse.ui.views.log.log" excluded="true" />
+	<header contentId="org.eclipse.pde.bundleManifest" excluded="true" />
+	<header contentId="org.eclipse.egit.patch" excluded="true" />
+	<header contentId="org.eclipse.pde.targetFile" excluded="true" />
+	<header contentId="org.eclipse.core.runtime.xml" excluded="true" />
+	<header contentId="org.eclipse.pde.simpleCheatSheet" excluded="true" />
+	<header contentId="org.eclipse.pde.siteManifest" excluded="true" />
+	<header contentId="org.eclipse.pde.buildProperties" excluded="true" />
+	<header contentId="org.eclipse.pde.categoryManifest" excluded="true" />
+	<header contentId="org.eclipse.pde.ctxHelpFile" excluded="true" />
+	<header contentId="org.eclipse.jdt.core.javaProperties" excluded="true" />
+	<header contentId="org.eclipse.jdt.core.JARManifest" excluded="true" />
+	<header contentId="org.eclipse.pde.pluginProperties" excluded="true" />
+	<header contentId="org.eclipse.core.resources.preferences" excluded="true" />
+	<header contentId="org.eclipse.team.genericeditor.diff.extension.patch" excluded="true" />
+	<header contentId="org.eclipse.pde.featureManifest" excluded="true" />
+	<header contentId="org.eclipse.pde.tocFile" excluded="true" />
+	<header contentId="org.eclipse.ant.core.antBuildFile" excluded="true" />
+	<header contentId="org.eclipse.pde.schema" excluded="true" />
+	<header contentId="org.eclipse.pde.productFile" excluded="true" />
+	<header contentId="org.eclipse.ltk.core.refactoring.refactoringHistory" excluded="true" />
+	<header contentId="org.eclipse.jdt.core.javaSource" postBlankLines="1" lineFormat="false" preserveFirstLine="false">
+		<beginLine><![CDATA[/*]]></beginLine>
+		<linePrefix><![CDATA[ * ]]></linePrefix>
+		<endLine><![CDATA[ */]]></endLine>
+	</header>
+	<header contentId="org.eclipse.pde.pluginManifest" excluded="true" />
+	<header contentId="org.eclipse.core.runtime.text" postBlankLines="0" lineFormat="true" preserveFirstLine="false">
+		<beginLine><![CDATA[#-------------------------------------------------------------------------------]]></beginLine>
+		<linePrefix><![CDATA[# ]]></linePrefix>
+		<endLine><![CDATA[#-------------------------------------------------------------------------------]]></endLine>
+	</header>
+</project>

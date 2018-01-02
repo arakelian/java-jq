@@ -1,0 +1,76 @@
+{
+    "sha": "61edf3fa93f6177ef099b1b0cb2b49813a35c546",
+    "commit": {
+        "author": {
+            "name": "Larry Aasen",
+            "email": "larryaasen@gmail.com",
+            "date": "2017-12-13T00:12:54Z"
+        },
+        "committer": {
+            "name": "Nico Williams",
+            "email": "nico@cryptonector.com",
+            "date": "2017-12-13T00:27:59Z"
+        },
+        "message": "Updated the compile-ios.sh script to fix issues with local oniguruma path.",
+        "tree": {
+            "sha": "aa3708ccb6a4f3ba2a1fcef72c0c51e5d780ce33",
+            "url": "https://api.github.com/repos/stedolan/jq/git/trees/aa3708ccb6a4f3ba2a1fcef72c0c51e5d780ce33"
+        },
+        "url": "https://api.github.com/repos/stedolan/jq/git/commits/61edf3fa93f6177ef099b1b0cb2b49813a35c546",
+        "comment_count": 0,
+        "verification": {
+            "verified": false,
+            "reason": "unsigned",
+            "signature": null,
+            "payload": null
+        }
+    },
+    "url": "https://api.github.com/repos/stedolan/jq/commits/61edf3fa93f6177ef099b1b0cb2b49813a35c546",
+    "html_url": "https://github.com/stedolan/jq/commit/61edf3fa93f6177ef099b1b0cb2b49813a35c546",
+    "comments_url": "https://api.github.com/repos/stedolan/jq/commits/61edf3fa93f6177ef099b1b0cb2b49813a35c546/comments",
+    "author": {
+        "login": "larryaasen",
+        "id": 325973,
+        "avatar_url": "https://avatars1.githubusercontent.com/u/325973?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/larryaasen",
+        "html_url": "https://github.com/larryaasen",
+        "followers_url": "https://api.github.com/users/larryaasen/followers",
+        "following_url": "https://api.github.com/users/larryaasen/following{/other_user}",
+        "gists_url": "https://api.github.com/users/larryaasen/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/larryaasen/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/larryaasen/subscriptions",
+        "organizations_url": "https://api.github.com/users/larryaasen/orgs",
+        "repos_url": "https://api.github.com/users/larryaasen/repos",
+        "events_url": "https://api.github.com/users/larryaasen/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/larryaasen/received_events",
+        "type": "User",
+        "site_admin": false
+    },
+    "committer": {
+        "login": "nicowilliams",
+        "id": 604851,
+        "avatar_url": "https://avatars2.githubusercontent.com/u/604851?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/nicowilliams",
+        "html_url": "https://github.com/nicowilliams",
+        "followers_url": "https://api.github.com/users/nicowilliams/followers",
+        "following_url": "https://api.github.com/users/nicowilliams/following{/other_user}",
+        "gists_url": "https://api.github.com/users/nicowilliams/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/nicowilliams/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/nicowilliams/subscriptions",
+        "organizations_url": "https://api.github.com/users/nicowilliams/orgs",
+        "repos_url": "https://api.github.com/users/nicowilliams/repos",
+        "events_url": "https://api.github.com/users/nicowilliams/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/nicowilliams/received_events",
+        "type": "User",
+        "site_admin": false
+    },
+    "parents": [
+        {
+            "sha": "8eff744eecb9ab2f43e75c70030bc9985bac18b2",
+            "url": "https://api.github.com/repos/stedolan/jq/commits/8eff744eecb9ab2f43e75c70030bc9985bac18b2",
+            "html_url": "https://github.com/stedolan/jq/commit/8eff744eecb9ab2f43e75c70030bc9985bac18b2"
+        }
+    ]
+}

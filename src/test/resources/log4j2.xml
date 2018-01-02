@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration monitorInterval="30">
+        <Properties>
+            <!-- Spring Boot logging pattern can be found here -->
+            <!-- https://raw.githubusercontent.com/spring-projects/spring-boot/master/spring-boot-samples/spring-boot-sample-actuator-log4j2/src/main/resources/log4j2.xml -->
+            <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS}  %-5p  (%file:%line) - %message%n</Property>
+        </Properties>
+        <Appenders>
+                <Console name="C">
+                        <PatternLayout pattern="${LOG_PATTERN}" />
+                </Console>
+        </Appenders>
+        <Loggers>
+                <Root level="info" includeLocation="true">
+                        <AppenderRef ref="C" />
+                </Root>
+                <Logger name="com.arakelian" level="debug" includeLocation="true" />
+                <Logger name="org.apache.http" level="debug" includeLocation="true" />
+                <Logger name="org.apache.http.wire" level="debug" includeLocation="true" />
+        </Loggers>
+</Configuration>
