@@ -5,9 +5,9 @@ the necessary jq and Oniguruma native libraries in a jar file, and then uses
 [Java Native Access](https://github.com/java-native-access/jna) (JNA) to call the 
 embedded libraries in a Java-friendly way.
 
-The Maven Central distribution of java-jq includes native JQ 1.5 libraries for all major platforms (Mac, Windows and Linux).
+The distribution of java-jq includes native JQ 1.5 libraries for all major platforms (Mac, Windows and Linux), and includes a statically linked version of Oniguruma 5.9.6 to avoid any runtime compatibility issues.
 
-java-jq is heavily inspired by [jjq](https://github.com/bskaggs/jjq).
+java-jq was heavily inspired by [jjq](https://github.com/bskaggs/jjq).
 
 
 ## Usage
@@ -15,10 +15,10 @@ java-jq is heavily inspired by [jjq](https://github.com/bskaggs/jjq).
 Using Java-JQ is very easy.
 
 
-First, let's get a reference to the Native JQ library. This class is thread-safe and should be shared globally.
+First, let's get a reference to the Native JQ library. This class is a thread-safe singleton.
 
 ```
-JqLibrary library = ImmutableJqLibrary.builder().build();
+JqLibrary library = ImmutableJqLibrary.of();
 ```
 
 Now, let's create a JQ request. A "request" is an immutable bean that contains three basic elements: a reference
