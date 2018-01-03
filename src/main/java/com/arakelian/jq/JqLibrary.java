@@ -3,8 +3,11 @@ package com.arakelian.jq;
 import java.util.List;
 
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.sun.jna.Callback;
 import com.sun.jna.Function;
@@ -15,8 +18,10 @@ import com.sun.jna.Structure.ByValue;
 import com.sun.jna.Union;
 import com.sun.jna.ptr.PointerByReference;
 
-@Value.Immutable
+@Value.Immutable(singleton = true)
 public abstract class JqLibrary {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JqLibrary.class);
+
     public static class Jv extends Structure implements ByValue {
         public static class U extends Union {
             public JvRefCount ptr;
@@ -161,8 +166,15 @@ public abstract class JqLibrary {
         return getLoader().getNativeLibrary().getFunction("jv_string_value");
     }
 
+    @Value.Lazy
+    @Value.Auxiliary
     public NativeLib getLoader() {
-        return ImmutableNativeLib.builder().name("jq").build();
+        final ImmutableNativeLib jq = ImmutableNativeLib.builder() //
+                .name("jq") //
+                .build();
+        Preconditions.checkState(jq.getNativeLibrary() != null, "Cannot load JQ library");
+        LOGGER.info("Loaded {}", jq.getLocalCopy());
+        return jq;
     }
 
     public boolean jq_compile(final Pointer state, final String filter) {

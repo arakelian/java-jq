@@ -16,7 +16,63 @@ import com.google.common.io.Resources;
 public class JqTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(JqTest.class);
 
-    private final JqLibrary library = ImmutableJqLibrary.builder().build();
+    private static final JqLibrary library = ImmutableJqLibrary.of();
+
+    private void checkJq(final String path) throws IOException {
+        final String input = path + "/input.json";
+        final String jq = path + "/jq.json";
+        final JqRequest request = ImmutableJqRequest.builder() //
+                .lib(library) //
+                .input(readResource(input)) //
+                .filter(readResource(jq)) //
+                .build();
+
+        final String output = path + "/output.json";
+        Assert.assertEquals(readResource(output), executeJq(request));
+    }
+
+    private String executeJq(final JqRequest request) {
+        final JqResponse response = request.execute();
+        assertTrue(response.getErrors().toString(), !response.hasErrors());
+        final String out = response.getOutput();
+        return out;
+    }
+
+    private String readResource(final String resource) throws IOException {
+        final URL url = this.getClass().getResource(resource);
+        Assert.assertTrue("Resource does not exist: " + resource, resource != null);
+        return Resources.toString(url, Charsets.UTF_8);
+    }
+
+    @Test
+    public void testAllCommitsWithLimitedFields() throws IOException {
+        // see: https://stedolan.github.io/jq/tutorial/
+        checkJq("/all_commits_limited");
+    }
+
+    @Test
+    public void testAllCommitsWithLimitedFieldsAsArray() throws IOException {
+        // see: https://stedolan.github.io/jq/tutorial/
+        checkJq("/all_commits_limited_array");
+    }
+
+    @Test
+    public void testAllCommitsWithParents() throws IOException {
+        // see: https://stedolan.github.io/jq/tutorial/
+        checkJq("/all_commits_with_parents");
+    }
+
+    @Test
+    public void testFirstCommit() throws IOException {
+        // see: https://stedolan.github.io/jq/tutorial/
+        checkJq("/first_commit");
+    }
+
+    @Test
+    public void testFirstCommitWithLimitedFields() throws IOException {
+        // see: https://stedolan.github.io/jq/tutorial/
+        checkJq("/first_commit_limited");
+    }
 
     @Test
     public void testFree() {
@@ -74,62 +130,32 @@ public class JqTest {
                 "        4,\n" + //
                 "        5\n" + //
                 "    ]\n" + //
-                "}", executeJq(request));
+                "}", //
+                executeJq(request));
     }
 
     @Test
-    public void testFirstCommit() throws IOException {
-        // see: https://stedolan.github.io/jq/tutorial/
-        checkJq("/first_commit");
-    }
-
-    @Test
-    public void testFirstCommitWithLimitedFields() throws IOException {
-        // see: https://stedolan.github.io/jq/tutorial/
-        checkJq("/first_commit_limited");
-    }
-
-    @Test
-    public void testAllCommitsWithLimitedFields() throws IOException {
-        // see: https://stedolan.github.io/jq/tutorial/
-        checkJq("/all_commits_limited");
-    }
-
-    @Test
-    public void testAllCommitsWithLimitedFieldsAsArray() throws IOException {
-        // see: https://stedolan.github.io/jq/tutorial/
-        checkJq("/all_commits_limited_array");
-    }
-
-    @Test
-    public void testAllCommitsWithParents() throws IOException {
-        // see: https://stedolan.github.io/jq/tutorial/
-        checkJq("/all_commits_with_parents");
-    }
-
-    private void checkJq(final String path) throws IOException {
-        final String input = path + "/input.json";
-        final String jq = path + "/jq.json";
+    public void testOniguruma() {
+        // keys are out of order deliberately
         final JqRequest request = ImmutableJqRequest.builder() //
                 .lib(library) //
-                .input(readResource(input)) //
-                .filter(readResource(jq)) //
+                .input("\"abbbc\"") //
+                .filter("match(\"(b+)\")") //
                 .build();
 
-        final String output = path + "/output.json";
-        Assert.assertEquals(readResource(output), executeJq(request));
-    }
-
-    private String readResource(String resource) throws IOException {
-        final URL url = this.getClass().getResource(resource);
-        Assert.assertTrue("Resource does not exist: " + resource, resource != null);
-        return Resources.toString(url, Charsets.UTF_8);
-    }
-
-    private String executeJq(final JqRequest request) {
-        final JqResponse response = request.execute();
-        assertTrue(response.getErrors().toString(), !response.hasErrors());
-        final String out = response.getOutput();
-        return out;
+        Assert.assertEquals("{\n" + //
+                "    \"offset\": 1,\n" + //
+                "    \"length\": 3,\n" + //
+                "    \"string\": \"bbb\",\n" + //
+                "    \"captures\": [\n" + //
+                "        {\n" + //
+                "            \"offset\": 1,\n" + //
+                "            \"length\": 3,\n" + //
+                "            \"string\": \"bbb\",\n" + //
+                "            \"name\": null\n" + //
+                "        }\n" + //
+                "    ]\n" + //
+                "}", //
+                executeJq(request));
     }
 }

@@ -32,14 +32,16 @@ build/make/lib/libjq.so: build/make/jq-$(JQ_VERSION).tar.gz build/make/lib/libon
 	tar xvf jq-$(JQ_VERSION).tar.gz && \
 	cd jq-$(JQ_VERSION) && \
 	./configure --disable-maintainer-mode --prefix $$(cd .. && pwd -P) --with-oniguruma=$$(cd .. && pwd -P) && \
+	sed -i.bak 's/LIBS =  -lonig/LIBS = /' Makefile && \
+	sed -i.bak "s/libjq_la_LIBADD = -lm/libjq_la_LIBADD = -lm $$(find ../onig-$(ONIGURUMA_VERSION) -name '*.lo' | xargs echo | sed 's/\//\\\//g')/" Makefile && \
+	sed -i.bak "s/jq_LDADD = libjq.la -lm/jq_LDADD = libjq.la -lm $$(find ../onig-$(ONIGURUMA_VERSION) -name '*.lo' | xargs echo | sed 's/\//\\\//g')/" Makefile && \
 	make && \
 	make install
 
 src/main/resources/lib/: build/make/lib/libjq.so build/make/lib/libonig.so
 	mkdir -p src/main/resources/lib/$(PLATFORM)
 	cd src/main/resources/lib/$(PLATFORM) && \
-	find ../../../../../build/make/lib \( -name 'libjq.so'    -o -name 'libonig.so'    \) -exec cp -L \{} . \;; \
-	find ../../../../../build/make/lib \( -name 'libjq.dylib' -o -name 'libonig.dylib' \) -exec cp -L \{} . \;
+	find ../../../../../build/make/lib \( -name 'libjq.so' -o -name 'libjq.dylib' \) -exec cp -L \{} . \;
 
 target/jjq-$(JJQ_VERSION)-SNAPSHOT.jar: src/main/resources/lib/
 	echo "Built"

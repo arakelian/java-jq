@@ -120,6 +120,9 @@ public abstract class JqRequest {
 
     private JqResponse parse(final Pointer state) {
         final ImmutableJqResponse.Builder response = ImmutableJqResponse.builder();
+        if (getInput().length() == 0) {
+            return response.build();
+        }
 
         LOGGER.trace("Configuring callback");
         getLib().jq_set_error_cb(state, (data, jv) -> {
