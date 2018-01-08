@@ -24,20 +24,37 @@ plugins {
 
     // for deployment to Maven Central
     id "io.codearte.nexus-staging" version "0.11.0"
+
+    // for building fat jar
+    id "com.github.johnrengelman.shadow" version "2.0.2"
+
+    // useful utilities
+    id "com.arakelian.multitool" version "1.1.6"
 }
 
 group   = 'com.arakelian'
 
-// common gradle code shared between projects
-apply from: "gradle/core.gradle"
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.4.1'
+}
+
+multitool {
+    relocates += [
+        'com.google.common'      : 'repackaged.com.arakelian.jq.com.google.common',
+        'com.google.thirdparty'  : 'repackaged.com.arakelian.jq.com.google.thirdparty',
+        'javax.annotation'       : 'repackaged.com.arakelian.jq.javax.annotation',
+    ]
+}
 
 dependencies {
     processor 'org.immutables:value:2.5.6'
 
-    // common stuff
-    compile 'net.java.dev.jna:jna:4.5.1'
-    compile 'com.google.guava:guava:23.4-jre'
+    // we shadow Guava due to frequent downstream compatibility issues
+    shadow 'com.google.guava:guava:23.6-jre'
 
+    // we do not shadow this library because there may be linkages to native code that
+    // rely upon specific package or class names
+    compile 'net.java.dev.jna:jna:4.5.1'
 
     // logging
     testCompile 'org.apache.logging.log4j:log4j-api:2.9.1'
