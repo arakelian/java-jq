@@ -29,7 +29,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "2.0.2"
 
     // useful utilities
-    id "com.arakelian.multitool" version "1.1.6"
+    id "com.arakelian.multitool" version "1.2.0"
 }
 
 group   = 'com.arakelian'
@@ -40,9 +40,9 @@ task wrapper(type: Wrapper) {
 
 multitool {
     relocates += [
-        'com.google.common'      : 'repackaged.com.arakelian.jq.com.google.common',
-        'com.google.thirdparty'  : 'repackaged.com.arakelian.jq.com.google.thirdparty',
-        'javax.annotation'       : 'repackaged.com.arakelian.jq.javax.annotation',
+        'com.google.common'      : 'repackaged.com.arakelian.jq.${prefix}com.google.common',
+        'com.google.thirdparty'  : 'repackaged.com.arakelian.jq.${prefix}com.google.thirdparty',
+        'javax.annotation'       : 'repackaged.com.arakelian.jq.${prefix}javax.annotation',
     ]
 }
 
