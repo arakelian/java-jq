@@ -17,7 +17,7 @@ Using Java-JQ is very easy.
 
 First, let's get a reference to the Native JQ library. This class is a thread-safe singleton.
 
-```
+```java
 JqLibrary library = ImmutableJqLibrary.of();
 ```
 
@@ -25,7 +25,7 @@ Now, let's create a JQ request. A "request" is an immutable bean that contains t
 to the JQ library we created above, the JSON input you want to transform, and the JQ filter expression that you
 want to execute.
 
-```
+```java
 final JqRequest request = ImmutableJqRequest.builder() //
         .lib(library) //
         .input("{\"a\":[1,2,3,4,5],\"b\":\"hello\"}") //
@@ -35,7 +35,7 @@ final JqRequest request = ImmutableJqRequest.builder() //
 
 As a final step, let's execute the request.
 
-```
+```java
 final JqResponse response = request.execute();
 if( response.hasError ) {
    // display errors in response.getErrors()
