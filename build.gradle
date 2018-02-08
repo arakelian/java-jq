@@ -29,7 +29,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "2.0.2"
 
     // useful utilities
-    id "com.arakelian.multitool" version "1.2.0"
+    id "com.arakelian.multitool" version "1.3.0"
 }
 
 group   = 'com.arakelian'
@@ -50,7 +50,7 @@ dependencies {
     processor 'org.immutables:value:2.5.6'
 
     // we shadow Guava due to frequent downstream compatibility issues
-    shadow 'com.google.guava:guava:23.6-jre'
+    shadow 'com.google.guava:guava:24.0-jre'
 
     // we do not shadow this library because there may be linkages to native code that
     // rely upon specific package or class names

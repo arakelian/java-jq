@@ -46,7 +46,7 @@ if( response.hasError ) {
 
 ## Installation
 
-The library is available on Maven Central
+The library is available on [Maven Central](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.arakelian%22%20AND%20a%3A%22java-jq%22).
 
 ### Maven
 
@@ -69,7 +69,7 @@ Add the following to your `pom.xml`:
 <dependency>
     <groupId>com.arakelian</groupId>
     <artifactId>java-jq</artifactId>
-    <version>0.9.2</version>
+    <version>0.9.3</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -84,7 +84,7 @@ repositories {
 }
 
 dependencies {
-  testCompile 'com.arakelian:java-jq:0.9.2'
+  testCompile 'com.arakelian:java-jq:0.9.3'
 }
 ```
 
