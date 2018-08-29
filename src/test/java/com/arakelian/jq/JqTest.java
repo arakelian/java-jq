@@ -158,4 +158,16 @@ public class JqTest {
                 "}", //
                 executeJq(request));
     }
+
+    @Test
+    public void testInvalidInput() {
+        final JqRequest request = ImmutableJqRequest.builder()
+                .lib(library)
+                .input("{{")
+                .filter(".")
+                .build();
+
+        JqResponse response = request.execute();
+        assertTrue(response.hasErrors());
+    }
 }
