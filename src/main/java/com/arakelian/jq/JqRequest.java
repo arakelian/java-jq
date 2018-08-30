@@ -83,18 +83,15 @@ public abstract class JqRequest {
      * Adds any messages produced by jq native code it to the error store, with the provided prefix.
      *
      * @param value
-     * @param prefix
      */
     private String getInvalidMessage(final Jv value) {
         final Jv copy = getLib().jv_copy(value);
-        try {
-            if (getLib().jv_invalid_has_msg(copy)) {
-                final Jv message = getLib().jv_invalid_get_msg(value);
-                return getLib().jv_string_value(message);
-            }
-            return null;
-        } finally {
+        if (getLib().jv_invalid_has_msg(copy)) {
+            final Jv message = getLib().jv_invalid_get_msg(value);
+            return getLib().jv_string_value(message);
+        } else {
             getLib().jv_free(value);
+            return null;    
         }
     }
 
@@ -184,7 +181,7 @@ public abstract class JqRequest {
 
         // give text to JQ parser
         LOGGER.trace("Sending text to parser");
-        getLib().jv_parser_set_buf(parser, memory, input.length, false);
+        getLib().jv_parser_set_buf(parser, memory, input.length, true);
 
         final StringBuilder buf = new StringBuilder();
         for (;;) {
@@ -217,9 +214,6 @@ public abstract class JqRequest {
 
         // tell parser we are finished
         LOGGER.trace("Finishing with parser");
-        getLib().jv_parser_set_buf(parser, new Pointer(-1), 0, true);
-        final Jv parsed = getLib().jv_parser_next(parser);
-        isFinished(response, parsed);
 
         // finalize output
         final String output = buf.toString();
