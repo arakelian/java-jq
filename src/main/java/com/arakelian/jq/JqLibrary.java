@@ -17,11 +17,12 @@
 
 package com.arakelian.jq;
 
+import static java.util.logging.Level.INFO;
+
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
@@ -68,7 +69,7 @@ public abstract class JqLibrary {
         }
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JqLibrary.class);
+    private static final Logger LOGGER = Logger.getLogger(JqLibrary.class.getName());
 
     public static final int JV_KIND_INVALID = 0;
     public static final int JV_KIND_NULL = 1;
@@ -235,7 +236,7 @@ public abstract class JqLibrary {
                 .name("jq") //
                 .build();
         Preconditions.checkState(jq.getNativeLibrary() != null, "Cannot load JQ library");
-        LOGGER.info("Loaded {}", jq.getLocalCopy());
+        LOGGER.log(INFO, "Loaded {0}", new Object[] { jq.getLocalCopy() });
         return jq;
     }
 

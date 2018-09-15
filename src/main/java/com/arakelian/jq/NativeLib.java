@@ -17,6 +17,8 @@
 
 package com.arakelian.jq;
 
+import static java.util.logging.Level.INFO;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,10 +26,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -37,7 +38,7 @@ import com.sun.jna.Platform;
 
 @Value.Immutable(copy = false)
 public abstract class NativeLib {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NativeLib.class);
+    private static final Logger LOGGER = Logger.getLogger(NativeLib.class.getName());
 
     @Value.Derived
     @Value.Auxiliary
@@ -84,7 +85,7 @@ public abstract class NativeLib {
                 // local.deleteOnExit();
 
                 final String resource = "lib/" + getPath() + filename;
-                LOGGER.info("Copying resource {} to: {}", resource, local);
+                LOGGER.log(INFO, "Copying resource {0} to: {1}", new Object[] { resource, local });
                 try (InputStream in = this.getClass().getClassLoader().getResourceAsStream(resource);
                         OutputStream out = new FileOutputStream(local)) {
                     Preconditions.checkState(in != null, "Cannot find resource %s", resource);
@@ -111,11 +112,11 @@ public abstract class NativeLib {
         final String name = getName();
 
         final File libPath = getLocalCopy();
-        LOGGER.info("{} library path: {}", name, libPath);
+        LOGGER.log(INFO, "{0} library path: {1}", new Object[] { name, libPath });
         NativeLibrary.addSearchPath(name, libPath.getAbsolutePath());
 
         final NativeLibrary instance = NativeLibrary.getInstance(name);
-        LOGGER.info("{} loaded from path: {} ", name, libPath);
+        LOGGER.log(INFO, "{0} loaded from path: {1} ", new Object[] { name, libPath });
         return instance;
     }
 

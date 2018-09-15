@@ -17,11 +17,12 @@
 
 package com.arakelian.jq;
 
+import static java.util.logging.Level.FINE;
+
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.arakelian.jq.JqLibrary.Jv;
 import com.google.common.base.Charsets;
@@ -39,20 +40,20 @@ public abstract class JqRequest {
         TWO_SPACES;
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JqRequest.class);
+    private static final Logger LOGGER = Logger.getLogger(JqRequest.class.getName());
 
     public final JqResponse execute() {
-        LOGGER.trace("Initializing JQ");
+        LOGGER.log(FINE, "Initializing JQ");
         final Pointer state = getLib().jq_init();
         Preconditions.checkState(state != null, "state must be non-null");
         try {
             final JqResponse response = parse(state);
-            LOGGER.trace("Response ready");
+            LOGGER.log(FINE, "Response ready");
             return response;
         } finally {
-            LOGGER.trace("Releasing JQ");
+            LOGGER.log(FINE, "Releasing JQ");
             getLib().jq_teardown(state);
-            LOGGER.trace("JQ released successfully");
+            LOGGER.log(FINE, "JQ released successfully");
         }
     }
 
@@ -146,10 +147,10 @@ public abstract class JqRequest {
             return response.build();
         }
 
-        LOGGER.trace("Configuring callback");
+        LOGGER.log(FINE, "Configuring callback");
         final JqLibrary lib = getLib();
         lib.jq_set_error_cb(state, (data, jv) -> {
-            LOGGER.trace("Error callback");
+            LOGGER.log(FINE, "Error callback");
             final int kind = lib.jv_get_kind(jv);
             if (kind == JqLibrary.JV_KIND_STRING) {
                 final String error = lib.jv_string_value(jv);
@@ -178,7 +179,7 @@ public abstract class JqRequest {
 
         try {
             // compile JQ program
-            LOGGER.trace("Compiling filter");
+            LOGGER.log(FINE, "Compiling filter");
             final String filter = getFilter();
             if (!lib.jq_compile_args(state, filter, lib.jv_copy(args))) {
                 // compile errors are captured by callback
@@ -186,18 +187,18 @@ public abstract class JqRequest {
             }
 
             // create JQ parser
-            LOGGER.trace("Creating parse");
+            LOGGER.log(FINE, "Creating parse");
             final int parserFlags = 0;
             final Pointer parser = lib.jv_parser_new(parserFlags);
             try {
                 parse(state, parser, getInput(), response);
                 return response.build();
             } finally {
-                LOGGER.trace("Releasing parser");
+                LOGGER.log(FINE, "Releasing parser");
                 lib.jv_parser_free(parser);
             }
         } finally {
-            LOGGER.trace("Releasing callback");
+            LOGGER.log(FINE, "Releasing callback");
             lib.jq_set_error_cb(state, null, null);
         }
     }
@@ -225,13 +226,13 @@ public abstract class JqRequest {
         memory.write(0, input, 0, input.length);
 
         // give text to JQ parser
-        LOGGER.trace("Sending text to parser");
+        LOGGER.log(FINE, "Sending text to parser");
         getLib().jv_parser_set_buf(parser, memory, input.length, true);
 
         final StringBuilder buf = new StringBuilder();
         for (;;) {
             // iterate until JQ consumes all inputs
-            LOGGER.trace("Parsing text");
+            LOGGER.log(FINE, "Parsing text");
             final Jv parsed = getLib().jv_parser_next(parser);
             if (isFinished(response, parsed)) {
                 break;
@@ -239,7 +240,7 @@ public abstract class JqRequest {
 
             // iterate until we consume all JQ streams
             // see: https://stedolan.github.io/jq/tutorial/
-            LOGGER.trace("Consuming JQ response");
+            LOGGER.log(FINE, "Consuming JQ response");
             getLib().jq_start(state, parsed);
             for (;;) {
                 final Jv next = getLib().jq_next(state);
@@ -247,7 +248,7 @@ public abstract class JqRequest {
                     break;
                 }
 
-                LOGGER.trace("Dumping response");
+                LOGGER.log(FINE, "Dumping response");
                 final int flags = getDumpFlags();
                 final String out = getLib().jv_dump_string(next, flags);
                 if (buf.length() != 0) {
@@ -258,7 +259,7 @@ public abstract class JqRequest {
         }
 
         // tell parser we are finished
-        LOGGER.trace("Finishing with parser");
+        LOGGER.log(FINE, "Finishing with parser");
 
         // finalize output
         final String output = buf.toString();

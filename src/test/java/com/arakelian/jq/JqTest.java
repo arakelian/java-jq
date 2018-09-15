@@ -17,24 +17,32 @@
 
 package com.arakelian.jq;
 
+import static java.util.logging.Level.CONFIG;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 
 public class JqTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JqTest.class);
+    private static final Logger LOGGER = Logger.getLogger(JqTest.class.getName());
 
     private static final JqLibrary library = ImmutableJqLibrary.of();
+
+    @Before
+    public void logging() throws SecurityException, IOException {
+        LogManager manager = LogManager.getLogManager();
+        manager.readConfiguration(getClass().getResourceAsStream("/logging.properties"));
+    }
 
     @Test
     public void testAllCommitsWithLimitedFields() throws IOException {
@@ -99,7 +107,7 @@ public class JqTest {
 
         // iterate multiple times to ensure no native "free" memory issues
         for (int i = 0; i < 10; i++) {
-            LOGGER.debug("Iteration {}", i);
+            LOGGER.log(CONFIG, "Iteration {0}", new Object[] { i });
             executeJq(request);
         }
     }
