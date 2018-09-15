@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.arakelian.jq;
 
 import java.util.List;
@@ -20,7 +37,9 @@ import com.sun.jna.ptr.PointerByReference;
 
 @Value.Immutable(singleton = true)
 public abstract class JqLibrary {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JqLibrary.class);
+    public interface ErrorCallback extends Callback {
+        public void callback(final Pointer data, final Jv jv);
+    }
 
     public static class Jv extends Structure implements ByValue {
         public static class U extends Union {
@@ -40,10 +59,6 @@ public abstract class JqLibrary {
         }
     }
 
-    public interface ErrorCallback extends Callback {
-        public void callback(final Pointer data, final Jv jv);
-    }
-
     public static class JvRefCount extends Structure implements ByReference {
         public int count;
 
@@ -52,6 +67,8 @@ public abstract class JqLibrary {
             return ImmutableList.of("count");
         }
     }
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JqLibrary.class);
 
     public static final int JV_KIND_INVALID = 0;
     public static final int JV_KIND_NULL = 1;
@@ -87,6 +104,11 @@ public abstract class JqLibrary {
     }
 
     @Value.Auxiliary
+    public Function getJqCompileArgs() {
+        return getLoader().getNativeLibrary().getFunction("jq_compile_args");
+    }
+
+    @Value.Auxiliary
     public Function getJqInit() {
         return getLoader().getNativeLibrary().getFunction("jq_init");
     }
@@ -109,6 +131,21 @@ public abstract class JqLibrary {
     @Value.Auxiliary
     public Function getJqTeardown() {
         return getLoader().getNativeLibrary().getFunction("jq_teardown");
+    }
+
+    @Value.Auxiliary
+    public Function getJvArray() {
+        return getLoader().getNativeLibrary().getFunction("jv_array");
+    }
+
+    @Value.Auxiliary
+    public Function getJvArrayAppend() {
+        return getLoader().getNativeLibrary().getFunction("jv_array_append");
+    }
+
+    @Value.Auxiliary
+    public Function getJvArrayConcat() {
+        return getLoader().getNativeLibrary().getFunction("jv_array_concat");
     }
 
     @Value.Auxiliary
@@ -142,6 +179,26 @@ public abstract class JqLibrary {
     }
 
     @Value.Auxiliary
+    public Function getJvObject() {
+        return getLoader().getNativeLibrary().getFunction("jv_object");
+    }
+
+    @Value.Auxiliary
+    public Function getJvObjectHas() {
+        return getLoader().getNativeLibrary().getFunction("jv_object_has");
+    }
+
+    @Value.Auxiliary
+    public Function getJvObjectSet() {
+        return getLoader().getNativeLibrary().getFunction("jv_object_set");
+    }
+
+    @Value.Auxiliary
+    public Function getJvParse() {
+        return getLoader().getNativeLibrary().getFunction("jv_parse");
+    }
+
+    @Value.Auxiliary
     public Function getJvParserFree() {
         return getLoader().getNativeLibrary().getFunction("jv_parser_free");
     }
@@ -159,6 +216,11 @@ public abstract class JqLibrary {
     @Value.Auxiliary
     public Function getJvParserSetBuf() {
         return getLoader().getNativeLibrary().getFunction("jv_parser_set_buf");
+    }
+
+    @Value.Auxiliary
+    public Function getJvString() {
+        return getLoader().getNativeLibrary().getFunction("jv_string");
     }
 
     @Value.Auxiliary
@@ -181,6 +243,10 @@ public abstract class JqLibrary {
         return getJqCompile().invokeInt(new Object[] { state, filter }) != 0;
     }
 
+    public boolean jq_compile_args(final Pointer state, final String filter, final Jv args) {
+        return getJqCompileArgs().invokeInt(new Object[] { state, filter, args }) != 0;
+    }
+
     public Pointer jq_init() {
         return (Pointer) getJqInit().invoke(Pointer.class, NO_ARGS);
     }
@@ -193,19 +259,6 @@ public abstract class JqLibrary {
         getJqSetErrorCb().invoke(new Object[] { state, callback, data });
     }
 
-    public String jv_dump_string(Jv next, int flags) {
-        Jv dumped = (Jv) getJvDumpString().invoke(Jv.class, new Object[] { next, flags });
-        try {
-            return jv_string_value(dumped);
-        } finally {
-            jv_free(dumped);
-        }
-    }
-
-    public Jv jv_copy(Jv jv) {
-        return (Jv) getJvCopy().invoke(Jv.class, new Object[] { jv });
-    }
-
     public void jq_start(final Pointer state, final Jv jv) {
         getJqStart().invoke(new Object[] { state, jv, 0 });
     }
@@ -213,6 +266,31 @@ public abstract class JqLibrary {
     public void jq_teardown(final Pointer state) {
         final PointerByReference ref = new PointerByReference(state);
         getJqTeardown().invoke(new Object[] { ref });
+    }
+
+    public Jv jv_array() {
+        return (Jv) getJvArray().invoke(Jv.class, new Object[] {});
+    }
+
+    public Jv jv_array_append(final Jv array, final Jv value) {
+        return (Jv) getJvArrayAppend().invoke(Jv.class, new Object[] { array, value });
+    }
+
+    public Jv jv_array_concat(final Jv array, final Jv anotherArray) {
+        return (Jv) getJvArrayConcat().invoke(Jv.class, new Object[] { array, anotherArray });
+    }
+
+    public Jv jv_copy(final Jv jv) {
+        return (Jv) getJvCopy().invoke(Jv.class, new Object[] { jv });
+    }
+
+    public String jv_dump_string(final Jv next, final int flags) {
+        final Jv dumped = (Jv) getJvDumpString().invoke(Jv.class, new Object[] { next, flags });
+        try {
+            return jv_string_value(dumped);
+        } finally {
+            jv_free(dumped);
+        }
     }
 
     public void jv_free(final Jv jv) {
@@ -236,11 +314,28 @@ public abstract class JqLibrary {
         return kind != JqLibrary.JV_KIND_INVALID;
     }
 
+    public Jv jv_object() {
+        return (Jv) getJvObject().invoke(Jv.class, new Object[] {});
+    }
+
+    public boolean jv_object_has(final Jv object, final Jv key) {
+        final int has = getJvObjectHas().invokeInt(new Object[] { object, key });
+        return has != 0;
+    }
+
+    public Jv jv_object_set(final Jv object, final Jv key, final Jv value) {
+        return (Jv) getJvObjectSet().invoke(Jv.class, new Object[] { object, key, value });
+    }
+
+    public Jv jv_parse(final String json) {
+        return (Jv) getJvParse().invoke(Jv.class, new Object[] { json });
+    }
+
     public void jv_parser_free(final Pointer parser) {
         getJvParserFree().invoke(new Object[] { parser });
     }
 
-    public Pointer jv_parser_new(int flags) {
+    public Pointer jv_parser_new(final int flags) {
         return (Pointer) getJvParserNew().invoke(Pointer.class, new Object[] { Integer.valueOf(flags) });
     }
 
@@ -254,6 +349,10 @@ public abstract class JqLibrary {
             final int length,
             final boolean finished) {
         getJvParserSetBuf().invoke(new Object[] { parser, pointer, length, finished ? 0 : 1 });
+    }
+
+    public Jv jv_string(final String value) {
+        return (Jv) getJvString().invoke(Jv.class, new Object[] { value });
     }
 
     public String jv_string_value(final Jv jv) {

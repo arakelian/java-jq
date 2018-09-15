@@ -1,4 +1,23 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.arakelian.jq;
+
+import java.util.Map;
 
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -7,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import com.arakelian.jq.JqLibrary.Jv;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 
@@ -37,8 +57,8 @@ public abstract class JqRequest {
     }
 
     @Value.Default
-    public String getFilter() {
-        return ".";
+    public Map<String, String> getArgJson() {
+        return ImmutableMap.of();
     }
 
     @Value.Derived
@@ -68,16 +88,28 @@ public abstract class JqRequest {
     }
 
     @Value.Default
+    public String getFilter() {
+        return ".";
+    }
+
+    @Value.Default
     public Indent getIndent() {
         return Indent.TWO_SPACES;
     }
+
+    public abstract String getInput();
+
+    public abstract JqLibrary getLib();
 
     @Value.Default
     public String getStreamSeparator() {
         return "\n";
     }
 
-    public abstract String getInput();
+    @Value.Default
+    public boolean isSortKeys() {
+        return false;
+    }
 
     /**
      * Adds any messages produced by jq native code it to the error store, with the provided prefix.
@@ -91,11 +123,9 @@ public abstract class JqRequest {
             return getLib().jv_string_value(message);
         } else {
             getLib().jv_free(value);
-            return null;    
+            return null;
         }
     }
-
-    public abstract JqLibrary getLib();
 
     private boolean isFinished(final ImmutableJqResponse.Builder response, final Jv value) {
         if (getLib().jv_is_valid(value)) {
@@ -110,11 +140,6 @@ public abstract class JqRequest {
         return true;
     }
 
-    @Value.Default
-    public boolean isSortKeys() {
-        return false;
-    }
-
     private JqResponse parse(final Pointer state) {
         final ImmutableJqResponse.Builder response = ImmutableJqResponse.builder();
         if (getInput().length() == 0) {
@@ -122,20 +147,40 @@ public abstract class JqRequest {
         }
 
         LOGGER.trace("Configuring callback");
-        getLib().jq_set_error_cb(state, (data, jv) -> {
+        final JqLibrary lib = getLib();
+        lib.jq_set_error_cb(state, (data, jv) -> {
             LOGGER.trace("Error callback");
-            final int kind = getLib().jv_get_kind(jv);
+            final int kind = lib.jv_get_kind(jv);
             if (kind == JqLibrary.JV_KIND_STRING) {
-                final String error = getLib().jv_string_value(jv);
+                final String error = lib.jv_string_value(jv);
                 response.addError(error);
             }
         }, new Pointer(0));
+
+        // for JQ 1.5, arguments is an array; this changes with JQ 1.6+
+        Jv args = lib.jv_array();
+
+        final Map<String, String> argJson = getArgJson();
+        for (final String varname : argJson.keySet()) {
+            final String text = argJson.get(varname);
+
+            final Jv json = lib.jv_parse(text);
+            if (!lib.jv_is_valid(json)) {
+                response.addError("Invalid JSON text passed to --argjson (name: " + varname + ")");
+                return response.build();
+            }
+
+            Jv arg = lib.jv_object();
+            arg = lib.jv_object_set(arg, lib.jv_string("name"), lib.jv_string(varname));
+            arg = lib.jv_object_set(arg, lib.jv_string("value"), json);
+            args = lib.jv_array_append(args, arg);
+        }
 
         try {
             // compile JQ program
             LOGGER.trace("Compiling filter");
             final String filter = getFilter();
-            if (!getLib().jq_compile(state, filter)) {
+            if (!lib.jq_compile_args(state, filter, lib.jv_copy(args))) {
                 // compile errors are captured by callback
                 return response.build();
             }
@@ -143,17 +188,17 @@ public abstract class JqRequest {
             // create JQ parser
             LOGGER.trace("Creating parse");
             final int parserFlags = 0;
-            final Pointer parser = getLib().jv_parser_new(parserFlags);
+            final Pointer parser = lib.jv_parser_new(parserFlags);
             try {
                 parse(state, parser, getInput(), response);
                 return response.build();
             } finally {
                 LOGGER.trace("Releasing parser");
-                getLib().jv_parser_free(parser);
+                lib.jv_parser_free(parser);
             }
         } finally {
             LOGGER.trace("Releasing callback");
-            getLib().jq_set_error_cb(state, null, null);
+            lib.jq_set_error_cb(state, null, null);
         }
     }
 

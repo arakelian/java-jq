@@ -1,5 +1,23 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.arakelian.jq;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -18,32 +36,6 @@ public class JqTest {
 
     private static final JqLibrary library = ImmutableJqLibrary.of();
 
-    private void checkJq(final String path) throws IOException {
-        final String input = path + "/input.json";
-        final String jq = path + "/jq.json";
-        final JqRequest request = ImmutableJqRequest.builder() //
-                .lib(library) //
-                .input(readResource(input)) //
-                .filter(readResource(jq)) //
-                .build();
-
-        final String output = path + "/output.json";
-        Assert.assertEquals(readResource(output), executeJq(request));
-    }
-
-    private String executeJq(final JqRequest request) {
-        final JqResponse response = request.execute();
-        assertTrue(response.getErrors().toString(), !response.hasErrors());
-        final String out = response.getOutput();
-        return out;
-    }
-
-    private String readResource(final String resource) throws IOException {
-        final URL url = this.getClass().getResource(resource);
-        Assert.assertTrue("Resource does not exist: " + resource, resource != null);
-        return Resources.toString(url, Charsets.UTF_8);
-    }
-
     @Test
     public void testAllCommitsWithLimitedFields() throws IOException {
         // see: https://stedolan.github.io/jq/tutorial/
@@ -60,6 +52,29 @@ public class JqTest {
     public void testAllCommitsWithParents() throws IOException {
         // see: https://stedolan.github.io/jq/tutorial/
         checkJq("/all_commits_with_parents");
+    }
+
+    @Test
+    public void testArgJson() {
+        final JqRequest request = ImmutableJqRequest.builder() //
+                .lib(library) //
+                .putArgJson("index", "0") //
+                .input("{\n" + //
+                        "\"data\": [\n" + //
+                        "    {\n" + //
+                        "        \"id\": 1, \n" + //
+                        "        \"name\": \"John\"\n" + //
+                        "    }, \n" + //
+                        "    {\n" + //
+                        "        \"id\": 2, \n" + //
+                        "        \"name\": \"Doe\"\n" + //
+                        "    }" + //
+                        "]}")
+                .filter(".data[$index].id") //
+                .build();
+
+        final JqResponse response = request.execute();
+        assertEquals("1", response.getOutput());
     }
 
     @Test
@@ -121,7 +136,7 @@ public class JqTest {
                 .sortKeys(true) //
                 .build();
 
-        Assert.assertEquals("{\n" + //
+        assertEquals("{\n" + //
                 "    \"a\": \"hello\",\n" + //
                 "    \"b\": [\n" + //
                 "        1,\n" + //
@@ -135,6 +150,14 @@ public class JqTest {
     }
 
     @Test
+    public void testInvalidInput() {
+        final JqRequest request = ImmutableJqRequest.builder().lib(library).input("{{").filter(".").build();
+
+        final JqResponse response = request.execute();
+        assertTrue(response.hasErrors());
+    }
+
+    @Test
     public void testOniguruma() {
         // keys are out of order deliberately
         final JqRequest request = ImmutableJqRequest.builder() //
@@ -143,7 +166,7 @@ public class JqTest {
                 .filter("match(\"(b+)\")") //
                 .build();
 
-        Assert.assertEquals("{\n" + //
+        assertEquals("{\n" + //
                 "    \"offset\": 1,\n" + //
                 "    \"length\": 3,\n" + //
                 "    \"string\": \"bbb\",\n" + //
@@ -159,15 +182,29 @@ public class JqTest {
                 executeJq(request));
     }
 
-    @Test
-    public void testInvalidInput() {
-        final JqRequest request = ImmutableJqRequest.builder()
-                .lib(library)
-                .input("{{")
-                .filter(".")
+    private void checkJq(final String path) throws IOException {
+        final String input = path + "/input.json";
+        final String jq = path + "/jq.json";
+        final JqRequest request = ImmutableJqRequest.builder() //
+                .lib(library) //
+                .input(readResource(input)) //
+                .filter(readResource(jq)) //
                 .build();
 
-        JqResponse response = request.execute();
-        assertTrue(response.hasErrors());
+        final String output = path + "/output.json";
+        Assert.assertEquals(readResource(output), executeJq(request));
+    }
+
+    private String executeJq(final JqRequest request) {
+        final JqResponse response = request.execute();
+        assertTrue(response.getErrors().toString(), !response.hasErrors());
+        final String out = response.getOutput();
+        return out;
+    }
+
+    private String readResource(final String resource) throws IOException {
+        final URL url = this.getClass().getResource(resource);
+        Assert.assertTrue("Resource does not exist: " + resource, resource != null);
+        return Resources.toString(url, Charsets.UTF_8);
     }
 }
