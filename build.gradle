@@ -29,13 +29,13 @@ plugins {
     id "com.github.johnrengelman.shadow" version "2.0.4"
 
     // useful utilities
-    id "com.arakelian.multitool" version "1.4.2"
+    id "com.arakelian.multitool" version "1.5.3"
 }
 
 group   = 'com.arakelian'
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.10'
+    gradleVersion = '4.10.2'
 }
 
 multitool {
