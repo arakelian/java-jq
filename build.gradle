@@ -12,30 +12,30 @@ plugins {
     id 'signing'
     id 'eclipse'
     id 'idea'
-
+    
     // keep dependencies up-to-date!
-    id 'com.github.ben-manes.versions' version '0.20.0'
+    id 'com.github.ben-manes.versions' version '0.21.0'
 
     // useful for creating immutable java beans
-    id 'org.inferred.processors' version '1.2.18'
+    id 'org.inferred.processors' version '2.2.0'
 
     // to ensure clean code
-    id "net.ltgt.errorprone" version "0.0.16"
+    id "net.ltgt.errorprone" version "0.7.1"
 
     // for deployment to Maven Central
-    id "io.codearte.nexus-staging" version "0.11.0"
+    id "io.codearte.nexus-staging" version "0.20.0"
 
     // for building fat jar
-    id "com.github.johnrengelman.shadow" version "2.0.4"
+    id "com.github.johnrengelman.shadow" version "5.0.0"
 
     // useful utilities
-    id "com.arakelian.multitool" version "1.5.3"
+    id "com.arakelian.multitool" version "2.3.0"
 }
 
 group   = 'com.arakelian'
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.10.2'
+wrapper {
+    gradleVersion = '5.3'
 }
 
 multitool {
@@ -47,20 +47,24 @@ multitool {
     
     proguardConfiguration {
         keep includedescriptorclasses:true, 'class com.arakelian.** { *; }'
-
-        dontnote '**.org.apache.commons.lang3.ObjectUtils'
     }
 }
 
 dependencies {
-    processor 'org.immutables:value:2.7.1'
+    processor 'org.immutables:value:2.7.5'
+    
+    // annotations
+    compile 'org.immutables:value-annotations:2.7.5'
+
+    // configure errorprone version
+    errorprone 'com.google.errorprone:error_prone_core:2.3.3'
 
     // we shadow Guava due to frequent downstream compatibility issues
-    shadow 'com.google.guava:guava:26.0-jre'
+    shadow 'com.google.guava:guava:27.1-jre'
 
     // we do not shadow this library because there may be linkages to native code that
     // rely upon specific package or class names
-    compile 'net.java.dev.jna:jna:4.5.2'
+    compile 'net.java.dev.jna:jna:5.2.0'
 
     // for unit testing
     testCompile 'junit:junit:4.12'
