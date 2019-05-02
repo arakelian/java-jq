@@ -1,11 +1,11 @@
 # java-jq
 
-FROM  ubuntu:18.04
+FROM  ubuntu:14.04
 LABEL maintainer="Greg Arakelian <GREG@ARAKELIAN.COM>"
 
 # install required software
 RUN apt update && \
-    apt install -y build-essential git autoconf automake libtool emacs-nox wget bash valgrind
+    apt install -y build-essential git autoconf automake libtool wget bash valgrind
 
 # copy script
 COPY build-jq.sh /usr/local/bin
