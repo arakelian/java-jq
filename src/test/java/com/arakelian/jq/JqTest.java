@@ -190,6 +190,20 @@ public class JqTest {
                 executeJq(request));
     }
 
+    @Test
+    public void testJq16Feature() {
+        // make sure a JQ 1.6 feature works
+        final JqRequest request = ImmutableJqRequest.builder() //
+                .lib(library) //
+                .input("123") //
+                .filter("strflocaltime(\"%Y-%m-%dT%H:%M:%S %Z\")") //
+                .build();
+
+        assertEquals(
+                "\"1969-12-31T19:02:03 EST\"", //
+                executeJq(request));
+    }
+
     private void checkJq(final String path) throws IOException {
         final String input = path + "/input.json";
         final String jq = path + "/jq.json";
