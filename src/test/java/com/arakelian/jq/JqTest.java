@@ -199,6 +199,7 @@ public class JqTest {
                 .filter("strflocaltime(\"%Y-%m-%dT%H:%M:%S %Z\")") //
                 .build();
 
+        // if this fails, make sure timezone was set to EST
         assertEquals(
                 "\"1969-12-31T19:02:03 EST\"", //
                 executeJq(request));

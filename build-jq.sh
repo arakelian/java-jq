@@ -3,7 +3,6 @@
 mkdir -p build
 cd build
 
-JJQ_VERSION=0.0.1
 ONIGURUMA_VERSION=5.9.6
 JQ_VERSION=1.6
 

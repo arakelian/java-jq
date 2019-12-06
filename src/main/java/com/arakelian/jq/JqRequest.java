@@ -159,7 +159,7 @@ public abstract class JqRequest {
         }, new Pointer(0));
 
         // for JQ 1.5, arguments is an array; this changes with JQ 1.6+
-        Jv args = lib.jv_array();
+        Jv args = lib.jv_object();
 
         final Map<String, String> argJson = getArgJson();
         for (final String varname : argJson.keySet()) {
@@ -171,10 +171,7 @@ public abstract class JqRequest {
                 return response.build();
             }
 
-            Jv arg = lib.jv_object();
-            arg = lib.jv_object_set(arg, lib.jv_string("name"), lib.jv_string(varname));
-            arg = lib.jv_object_set(arg, lib.jv_string("value"), json);
-            args = lib.jv_array_append(args, arg);
+            args = lib.jv_object_set(args, lib.jv_string(varname), json);
         }
 
         try {
@@ -183,6 +180,7 @@ public abstract class JqRequest {
             final String filter = getFilter();
             if (!lib.jq_compile_args(state, filter, lib.jv_copy(args))) {
                 // compile errors are captured by callback
+                LOGGER.log(FINE, "Compilation failed");
                 return response.build();
             }
 
