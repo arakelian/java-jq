@@ -5,7 +5,7 @@ the necessary jq and Oniguruma native libraries in a jar file, and then uses
 [Java Native Access](https://github.com/java-native-access/jna) (JNA) to call the 
 embedded libraries in a Java-friendly way.
 
-The distribution of java-jq includes native JQ 1.5 libraries for all major platforms (Mac, Windows and Linux), and includes a statically linked version of Oniguruma 5.9.6 to avoid any runtime compatibility issues.
+The distribution of java-jq includes native JQ 1.6 libraries for all major platforms (Mac, Windows and Linux), and includes a statically linked version of Oniguruma 5.9.6 to avoid any runtime compatibility issues.
 
 java-jq was heavily inspired by [jjq](https://github.com/bskaggs/jjq).
 
