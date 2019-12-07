@@ -1,1 +1,0 @@
-.[0] | {message: .commit.message, name: .commit.committer.name}

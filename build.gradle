@@ -71,4 +71,9 @@ dependencies {
 
     // for unit testing
     testCompile 'junit:junit:4.12'
+    testCompile 'com.fasterxml.jackson.core:jackson-core:2.9.8'
+    testCompile 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
+    testCompile 'com.fasterxml.jackson.module:jackson-module-parameter-names:2.9.8'
+    testCompile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.9.8'
+    testCompile 'net.javacrumbs.json-unit:json-unit:2.8.0'
 }

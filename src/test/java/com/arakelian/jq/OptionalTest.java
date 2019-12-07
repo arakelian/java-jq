@@ -25,13 +25,13 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JqTest extends AbstractJqTest {
+public class OptionalTest extends AbstractJqTest {
     @Parameters(name = "{0}")
     public static Collection<Object[]> data() throws IOException {
-        return new JqTestParser("/jq.test").data();
+        return new JqTestParser("/optional.test").data();
     }
 
-    public JqTest(String testName, Type type, String program, String input, String expected) {
+    public OptionalTest(String testName, Type type, String program, String input, String expected) {
         super(testName, type, program, input, expected);
     }
 }

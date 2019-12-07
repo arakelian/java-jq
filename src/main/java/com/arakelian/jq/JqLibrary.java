@@ -120,6 +120,11 @@ public abstract class JqLibrary {
     }
 
     @Value.Auxiliary
+    public Function getJqSetAttr() {
+        return getLoader().getNativeLibrary().getFunction("jq_set_attr");
+    }
+
+    @Value.Auxiliary
     public Function getJqSetErrorCb() {
         return getLoader().getNativeLibrary().getFunction("jq_set_error_cb");
     }
@@ -240,32 +245,36 @@ public abstract class JqLibrary {
         return jq;
     }
 
-    public boolean jq_compile(final Pointer state, final String filter) {
-        return getJqCompile().invokeInt(new Object[] { state, filter }) != 0;
+    public boolean jq_compile(final Pointer jq, final String filter) {
+        return getJqCompile().invokeInt(new Object[] { jq, filter }) != 0;
     }
 
-    public boolean jq_compile_args(final Pointer state, final String filter, final Jv args) {
-        return getJqCompileArgs().invokeInt(new Object[] { state, filter, args }) != 0;
+    public boolean jq_compile_args(final Pointer jq, final String filter, final Jv args) {
+        return getJqCompileArgs().invokeInt(new Object[] { jq, filter, args }) != 0;
     }
 
     public Pointer jq_init() {
         return (Pointer) getJqInit().invoke(Pointer.class, NO_ARGS);
     }
 
-    public Jv jq_next(final Pointer state) {
-        return (Jv) getJqNext().invoke(Jv.class, new Object[] { state });
+    public Jv jq_next(final Pointer jq) {
+        return (Jv) getJqNext().invoke(Jv.class, new Object[] { jq });
     }
 
-    public void jq_set_error_cb(final Pointer state, final ErrorCallback callback, final Pointer data) {
-        getJqSetErrorCb().invoke(new Object[] { state, callback, data });
+    public void jq_set_attr(final Pointer jq, final Jv name, final Jv value) {
+        getJqSetAttr().invoke(new Object[] { jq, name, value });
     }
 
-    public void jq_start(final Pointer state, final Jv jv) {
-        getJqStart().invoke(new Object[] { state, jv, 0 });
+    public void jq_set_error_cb(final Pointer jq, final ErrorCallback callback, final Pointer data) {
+        getJqSetErrorCb().invoke(new Object[] { jq, callback, data });
     }
 
-    public void jq_teardown(final Pointer state) {
-        final PointerByReference ref = new PointerByReference(state);
+    public void jq_start(final Pointer jq, final Jv jv) {
+        getJqStart().invoke(new Object[] { jq, jv, 0 });
+    }
+
+    public void jq_teardown(final Pointer jq) {
+        final PointerByReference ref = new PointerByReference(jq);
         getJqTeardown().invoke(new Object[] { ref });
     }
 

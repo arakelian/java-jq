@@ -19,7 +19,12 @@ package com.arakelian.jq;
 
 import static java.util.logging.Level.FINE;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.immutables.value.Value;
@@ -42,18 +47,17 @@ public abstract class JqRequest {
 
     private static final Logger LOGGER = Logger.getLogger(JqRequest.class.getName());
 
+    /**
+     * JQ is not thread-safe - https://github.com/stedolan/jq/issues/120
+     */
+    private static final ReentrantLock SYNC = new ReentrantLock();
+
     public final JqResponse execute() {
-        LOGGER.log(FINE, "Initializing JQ");
-        final Pointer state = getLib().jq_init();
-        Preconditions.checkState(state != null, "state must be non-null");
+        SYNC.lock();
         try {
-            final JqResponse response = parse(state);
-            LOGGER.log(FINE, "Response ready");
-            return response;
+            return jq();
         } finally {
-            LOGGER.log(FINE, "Releasing JQ");
-            getLib().jq_teardown(state);
-            LOGGER.log(FINE, "JQ released successfully");
+            SYNC.unlock();
         }
     }
 
@@ -67,15 +71,18 @@ public abstract class JqRequest {
     public int getDumpFlags() {
         int flags = 0;
 
+        if (isPretty()) {
+            flags |= JqLibrary.JV_PRINT_PRETTY;
+        }
         switch (getIndent()) {
         case TAB:
-            flags = JqLibrary.JV_PRINT_PRETTY | JqLibrary.JV_PRINT_TAB;
+            flags = JqLibrary.JV_PRINT_TAB;
             break;
         case SPACE:
-            flags = JqLibrary.JV_PRINT_PRETTY | JqLibrary.JV_PRINT_SPACE1;
+            flags = JqLibrary.JV_PRINT_SPACE1;
             break;
         case TWO_SPACES:
-            flags = JqLibrary.JV_PRINT_PRETTY | JqLibrary.JV_PRINT_SPACE2;
+            flags = JqLibrary.JV_PRINT_SPACE2;
             break;
         case NONE:
         default:
@@ -102,9 +109,16 @@ public abstract class JqRequest {
 
     public abstract JqLibrary getLib();
 
+    public abstract List<File> getModulePaths();
+
     @Value.Default
     public String getStreamSeparator() {
         return "\n";
+    }
+
+    @Value.Default
+    public boolean isPretty() {
+        return true;
     }
 
     @Value.Default
@@ -128,9 +142,9 @@ public abstract class JqRequest {
         }
     }
 
-    private boolean isFinished(final ImmutableJqResponse.Builder response, final Jv value) {
+    private boolean isValid(final ImmutableJqResponse.Builder response, final Jv value) {
         if (getLib().jv_is_valid(value)) {
-            return false;
+            return true;
         }
 
         // success finishes will return "invalid" value without a message
@@ -138,22 +152,48 @@ public abstract class JqRequest {
         if (message != null) {
             response.addError(message);
         }
-        return true;
+        return false;
     }
 
-    private JqResponse parse(final Pointer state) {
-        final ImmutableJqResponse.Builder response = ImmutableJqResponse.builder();
-        if (getInput().length() == 0) {
-            return response.build();
+    private JqResponse jq() {
+        LOGGER.log(FINE, "Initializing JQ");
+        final JqLibrary lib = getLib();
+        final Pointer jq = lib.jq_init();
+        Preconditions.checkState(jq != null, "jq must be non-null");
+
+        Jv moduleDirs = lib.jv_array();
+        for (final File file : getModulePaths()) {
+            try {
+                final String dir = file.getCanonicalPath();
+                LOGGER.log(FINE, "Using module path: " + dir);
+                moduleDirs = lib.jv_array_append(moduleDirs, lib.jv_string(dir));
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
+        lib.jq_set_attr(jq, lib.jv_string("JQ_LIBRARY_PATH"), moduleDirs);
+
+        try {
+            final JqResponse response = parse(jq);
+            LOGGER.log(FINE, "Response ready");
+            return response;
+        } finally {
+            LOGGER.log(FINE, "Releasing JQ");
+            lib.jq_teardown(jq);
+            LOGGER.log(FINE, "JQ released successfully");
+        }
+    }
+
+    private JqResponse parse(final Pointer jq) {
+        final ImmutableJqResponse.Builder response = ImmutableJqResponse.builder();
 
         LOGGER.log(FINE, "Configuring callback");
         final JqLibrary lib = getLib();
-        lib.jq_set_error_cb(state, (data, jv) -> {
+        lib.jq_set_error_cb(jq, (data, jv) -> {
             LOGGER.log(FINE, "Error callback");
             final int kind = lib.jv_get_kind(jv);
             if (kind == JqLibrary.JV_KIND_STRING) {
-                final String error = lib.jv_string_value(jv);
+                final String error = lib.jv_string_value(jv).replaceAll("\\s++$", "");
                 response.addError(error);
             }
         }, new Pointer(0));
@@ -178,7 +218,7 @@ public abstract class JqRequest {
             // compile JQ program
             LOGGER.log(FINE, "Compiling filter");
             final String filter = getFilter();
-            if (!lib.jq_compile_args(state, filter, lib.jv_copy(args))) {
+            if (!lib.jq_compile_args(jq, filter, lib.jv_copy(args))) {
                 // compile errors are captured by callback
                 LOGGER.log(FINE, "Compilation failed");
                 return response.build();
@@ -189,7 +229,7 @@ public abstract class JqRequest {
             final int parserFlags = 0;
             final Pointer parser = lib.jv_parser_new(parserFlags);
             try {
-                parse(state, parser, getInput(), response);
+                parse(jq, parser, getInput(), response);
                 return response.build();
             } finally {
                 LOGGER.log(FINE, "Releasing parser");
@@ -197,7 +237,7 @@ public abstract class JqRequest {
             }
         } finally {
             LOGGER.log(FINE, "Releasing callback");
-            lib.jq_set_error_cb(state, null, null);
+            lib.jq_set_error_cb(jq, null, null);
         }
     }
 
@@ -205,7 +245,7 @@ public abstract class JqRequest {
      * Add the contents of a native memory array as text to the next chunk of input of the jq
      * program.
      *
-     * @param state
+     * @param jq
      *            JQ instance
      * @param parser
      *            JQ parser
@@ -215,7 +255,7 @@ public abstract class JqRequest {
      *            response that we are building
      */
     private void parse(
-            final Pointer state,
+            final Pointer jq,
             final Pointer parser,
             final String text,
             final ImmutableJqResponse.Builder response) {
@@ -227,27 +267,27 @@ public abstract class JqRequest {
         LOGGER.log(FINE, "Sending text to parser");
         getLib().jv_parser_set_buf(parser, memory, input.length, true);
 
+        final int flags = getDumpFlags();
         final StringBuilder buf = new StringBuilder();
         for (;;) {
             // iterate until JQ consumes all inputs
             LOGGER.log(FINE, "Parsing text");
             final Jv parsed = getLib().jv_parser_next(parser);
-            if (isFinished(response, parsed)) {
+            if (!isValid(response, parsed)) {
                 break;
             }
 
             // iterate until we consume all JQ streams
             // see: https://stedolan.github.io/jq/tutorial/
             LOGGER.log(FINE, "Consuming JQ response");
-            getLib().jq_start(state, parsed);
+            getLib().jq_start(jq, parsed);
             for (;;) {
-                final Jv next = getLib().jq_next(state);
-                if (isFinished(response, next)) {
+                final Jv next = getLib().jq_next(jq);
+                if (!isValid(response, next)) {
                     break;
                 }
 
                 LOGGER.log(FINE, "Dumping response");
-                final int flags = getDumpFlags();
                 final String out = getLib().jv_dump_string(next, flags);
                 if (buf.length() != 0) {
                     buf.append(getStreamSeparator());
