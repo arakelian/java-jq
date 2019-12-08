@@ -19,6 +19,7 @@ package com.arakelian.jq;
 
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
@@ -104,7 +105,7 @@ public abstract class AbstractJqTest {
                         }
                         expected.append(line);
                     }
-                    String testName = "Line " + lineNumber + ": " + program;
+                    final String testName = "Line " + lineNumber + ": " + program;
                     data.add(new Object[] { testName, type, program, input, expected.toString() });
                 }
             }
@@ -181,13 +182,19 @@ public abstract class AbstractJqTest {
 
     @Test
     public void test() {
+        final URL a_jq = getClass().getClassLoader().getResource("modules/a.jq");
+        assertNotNull("Cannot find path of a.jq", a_jq != null);
+        final File modulePath = new File(a_jq.getFile()).getParentFile();
+        assertTrue(modulePath.exists());
+        assertTrue(modulePath.isDirectory());
+
         final JqRequest request = ImmutableJqRequest.builder() //
                 .lib(library) //
                 .input(input) //
                 .filter(program) //
                 .pretty(false) //
                 .indent(Indent.SPACE) //
-                .addModulePath(new File("/Users/greg/git/java-jq/src/test/resources/modules")) //
+                .addModulePath(modulePath) //
                 .build();
 
         final JqResponse response = request.execute();
