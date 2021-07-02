@@ -38,10 +38,10 @@ As a final step, let's execute the request.
 
 ```java
 final JqResponse response = request.execute();
-if( response.hasError ) {
+if( response.hasErrors() ) {
    // display errors in response.getErrors()
 } else {
-   System.out.println( "JQ output: " + response.getOutput);
+   System.out.println( "JQ output: " + response.getOutput());
 }
 ```
 
