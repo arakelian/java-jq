@@ -72,7 +72,7 @@ publishing.publications.mavenJava {
 	pom.withXml {
 		Node pomNode = asNode()
 		pomNode.dependencies.'*'.findAll() {
-		    it.artifactId.text() in [ 'value-annotations', 'guava', 'commons-io', 'commons-lang3' ]
+		    it.artifactId.text() in [ 'value-annotations', 'guava', 'commons-io', 'commons-lang3', 'jna' ]
 		}.each() {
 		    it.parent().remove(it)
 		}
