@@ -18,9 +18,9 @@
 package com.arakelian.jq;
 
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,9 +31,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.logging.LogManager;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.opentest4j.AssertionFailedError;
 
 import com.arakelian.jq.JqRequest.Indent;
 import com.google.common.base.Charsets;
@@ -41,7 +40,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 
-import junit.framework.AssertionFailedError;
 import net.javacrumbs.jsonunit.JsonAssert;
 
 public abstract class AbstractJqTest {
@@ -54,7 +52,7 @@ public abstract class AbstractJqTest {
 
         public Collection<Object[]> data() throws IOException {
             final URL url = JqTest.class.getResource(resource);
-            Assert.assertTrue("Resource does not exist: " + resource, url != null);
+            assertTrue(url != null, "Resource does not exist: " + resource);
             final String content = Resources.toString(url, Charsets.UTF_8);
 
             final List<Object[]> data = Lists.newArrayList();
@@ -154,20 +152,47 @@ public abstract class AbstractJqTest {
 
     private static final JqLibrary library = ImmutableJqLibrary.of();
 
-    @BeforeClass
+    @BeforeAll
     public static void logging() throws SecurityException, IOException {
         final LogManager manager = LogManager.getLogManager();
         manager.readConfiguration(AbstractJqTest.class.getResourceAsStream("/logging.properties"));
         JsonAssert.setTolerance(0.01);
     }
 
-    protected final String testName;
-    private final Type type;
-    private final String input;
-    private final String[] expected;
-    private final String program;
+    protected String testName;
+    protected Type type;
+    protected String input;
+    protected String[] expected;
+    protected String program;
 
-    protected AbstractJqTest(
+    private void assertFail(final JqResponse response) {
+        final List<String> errors = response.getErrors();
+        assertTrue(errors.size() > 0, "Expected at least one error");
+
+        String error = errors.get(0);
+        final int pos = error.indexOf('\n');
+        if (pos != -1) {
+            error = error.substring(0, pos);
+        }
+        assertEquals(1, expected.length);
+        assertEquals(error, expected[0]);
+    }
+
+    private void assertPass(final JqResponse response) {
+        assertTrue(!response.hasErrors(), response.getErrors().toString());
+        final String[] actual = response.getOutput().split("\n");
+
+        assertEquals(expected.length, actual.length);
+        for (int i = 0; i < expected.length; i++) {
+            try {
+                assertJsonEquals(expected[i], actual[i]);
+            } catch (final AssertionFailedError e) {
+                assertEquals(expected[i], actual[i]);
+            }
+        }
+    }
+
+    protected void test(
             final String testName,
             final Type type,
             final String program,
@@ -178,12 +203,9 @@ public abstract class AbstractJqTest {
         this.input = input;
         this.expected = expected.split("\\n");
         this.program = program;
-    }
 
-    @Test
-    public void test() {
         final URL a_jq = getClass().getClassLoader().getResource("modules/a.jq");
-        assertNotNull("Cannot find path of a.jq", a_jq != null);
+        assertNotNull(a_jq != null, "Cannot find path of a.jq");
         final File modulePath = new File(a_jq.getFile()).getParentFile();
         assertTrue(modulePath.exists());
         assertTrue(modulePath.isDirectory());
@@ -204,40 +226,13 @@ public abstract class AbstractJqTest {
             assertFail(response);
             break;
         case MUST_FAIL_IGNORE_MESSAGE:
-            assertTrue("Expected failure", response.hasErrors());
+            assertTrue(response.hasErrors(), "Expected failure");
             break;
         case MUST_PASS:
             assertPass(response);
             break;
         default:
             throw new IllegalStateException("Unknown test type");
-        }
-    }
-
-    private void assertFail(final JqResponse response) {
-        final List<String> errors = response.getErrors();
-        assertTrue("Expected at least one error", errors.size() > 0);
-
-        String error = errors.get(0);
-        final int pos = error.indexOf('\n');
-        if (pos != -1) {
-            error = error.substring(0, pos);
-        }
-        assertEquals(1, expected.length);
-        assertEquals(error, expected[0]);
-    }
-
-    private void assertPass(final JqResponse response) {
-        assertTrue(response.getErrors().toString(), !response.hasErrors());
-        final String[] actual = response.getOutput().split("\n");
-
-        Assert.assertEquals(expected.length, actual.length);
-        for (int i = 0; i < expected.length; i++) {
-            try {
-                assertJsonEquals(expected[i], actual[i]);
-            } catch (final AssertionFailedError e) {
-                assertEquals(expected[i], actual[i]);
-            }
         }
     }
 }

@@ -20,18 +20,17 @@ package com.arakelian.jq;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class JqTest extends AbstractJqTest {
-    @Parameters(name = "{0}")
-    public static Collection<Object[]> data() throws IOException {
+    public static Collection<Object[]> jqTest() throws IOException {
         return new JqTestParser("/jq.test").data();
     }
 
-    public JqTest(String testName, Type type, String program, String input, String expected) {
-        super(testName, type, program, input, expected);
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    public void jqTest(String testName, Type type, String program, String input, String expected) {
+        test(testName, type, program, input, expected);
     }
 }
