@@ -401,6 +401,20 @@ eclipse {
 
 
 // -------------------------------------------
+//  README
+// -------------------------------------------
+
+task readme {
+    ant.replaceregexp(match:'\\<version\\>([0-9\\.]+)\\<\\/version\\>', replace:"<version>${version}</version>", flags:'g', byline:true) {
+        fileset(dir: '.', includes: 'README.md')
+    }
+    ant.replaceregexp(match:'com\\.arakelian\\:' + project.name + ':([0-9\\.]+)', replace:"com.arakelian:${project.name}:${version}", flags:'g', byline:true) {
+        fileset(dir: '.', includes: 'README.md')
+    }
+}
+
+
+// -------------------------------------------
 //  SHORTCUT TASKS
 // -------------------------------------------
 
