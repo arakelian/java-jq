@@ -2,78 +2,149 @@
 
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.guardsquare:proguard-gradle:7.1.0'  // The ProGuard Gradle plugin.
     }
 }
 
 plugins {
-    id 'java'
-    id 'maven'
+    id 'java-library'
+    id 'maven-publish'
     id 'signing'
     id 'eclipse'
     id 'idea'
-    
+
     // keep dependencies up-to-date!
-    id 'com.github.ben-manes.versions' version '0.22.0'
+    id 'com.github.ben-manes.versions' version '0.39.0'
 
     // useful for creating immutable java beans
-    id 'org.inferred.processors' version '2.2.0'
+    id 'org.inferred.processors' version '3.6.0'
 
     // to ensure clean code
-    id "net.ltgt.errorprone" version "0.7.1"
+    id "net.ltgt.errorprone" version "2.0.2"
 
     // for deployment to Maven Central
-    id "io.codearte.nexus-staging" version "0.21.0"
+    id "io.codearte.nexus-staging" version "0.30.0"
 
     // for building fat jar
-    id "com.github.johnrengelman.shadow" version "5.1.0"
-
-    // useful utilities
-    id "com.arakelian.multitool" version "2.4.0"
+    id "com.github.johnrengelman.shadow" version "7.1.0"
 }
 
 group   = 'com.arakelian'
+version = '1.2.0'
 
-wrapper {
-    gradleVersion = '5.6'
+
+apply from: "core.gradle"
+
+wrapper { 
+    gradleVersion = '7.2'
 }
 
-multitool {
-    relocates += [
-        'com.google.common'      : 'repackaged.com.arakelian.jq.${prefix}com.google.common',
-        'com.google.thirdparty'  : 'repackaged.com.arakelian.jq.${prefix}com.google.thirdparty',
-        'javax.annotation'       : 'repackaged.com.arakelian.jq.${prefix}javax.annotation',
-        'org.checkerframework'   : 'repackaged.com.arakelian.jq.${prefix}org.checkerframework'
-    ]
-    
-    proguardConfiguration {
-        keep includedescriptorclasses:true, 'class com.arakelian.** { *; }'
-        keep includedescriptorclasses:true, 'class com.sun.jna.** { *; }'
-        dontwarn 'com.sun.jna.**'
+publishing.publications.mavenJava {
+    pom {
+        name = "Java JQ"
+        description = "java-jq is not a re-implementation of jq in Java. It uses JNA to access embedded libraries."
+        url = "https://github.com/arakelian/java-jq"
+        
+        licenses {
+            license {
+                name = 'The Apache License, Version 2.0'
+                url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
+        
+        developers {
+            developer {
+                id = 'arakelian'
+                name = 'Greg Arakelian'
+                email = 'greg@arakelian.com'
+            }
+        }
+        
+        scm {
+            connection = 'scm:git:https://github.com/arakelian/java-jq.git'
+            developerConnection = 'scm:git:git@github.com:arakelian/java-jq.git'
+            url = 'https://github.com/arakelian/java-jq.git'
+        }
     }
+	pom.withXml {
+		Node pomNode = asNode()
+		pomNode.dependencies.'*'.findAll() {
+		    it.artifactId.text() in [ 'value-annotations', 'guava', 'commons-io', 'commons-lang3' ]
+		}.each() {
+		    it.parent().remove(it)
+		}
+	}
 }
 
 dependencies {
-    processor 'org.immutables:value:2.7.5'
-    
-    // annotations
-    compile 'org.immutables:value-annotations:2.7.5'
+    processor 'org.immutables:value:2.9.0-rc1'
 
+    // annotations
+    api 'org.immutables:value-annotations:2.9.0-rc1'
+    
     // configure errorprone version
-    errorprone 'com.google.errorprone:error_prone_core:2.3.3'
+    errorprone 'com.google.errorprone:error_prone_core:2.9.0'
 
     // we shadow Guava due to frequent downstream compatibility issues
-    shadow 'com.google.guava:guava:28.0-jre'
+    shadow      'com.google.guava:guava:31.0.1-jre'
 
     // we do not shadow this library because there may be linkages to native code that
     // rely upon specific package or class names
-    shadow 'net.java.dev.jna:jna:5.2.0'
+    shadow      'net.java.dev.jna:jna:5.9.0'
+
+    // logging
+    testImplementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+    testImplementation 'org.apache.logging.log4j:log4j-core:2.14.1'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1'
+    testImplementation 'org.slf4j:jcl-over-slf4j:1.7.32'
+    testImplementation 'org.slf4j:jul-to-slf4j:1.7.32'
+    api                'org.slf4j:slf4j-api:1.7.32'
 
     // for unit testing
-    testCompile 'junit:junit:4.12'
-    testCompile 'com.fasterxml.jackson.core:jackson-core:2.9.8'
-    testCompile 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
-    testCompile 'com.fasterxml.jackson.module:jackson-module-parameter-names:2.9.8'
-    testCompile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.9.8'
-    testCompile 'net.javacrumbs.json-unit:json-unit:2.8.0'
+    testImplementation 'junit:junit:4.13.1'
+    testImplementation 'com.fasterxml.jackson.core:jackson-core:2.13.0'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
+    testImplementation 'com.fasterxml.jackson.module:jackson-module-parameter-names:2.13.0'
+    testImplementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.13.0'
+    testImplementation 'net.javacrumbs.json-unit:json-unit:2.28.0'
+}
+
+shadowJar {
+    //task.mergeServiceFiles()
+
+    // we don't want poms for third-party stuff
+    exclude 'META-INF/maven/**/*'
+    exclude 'META-INF/**/*.SF'
+    exclude 'META-INF/**/*.DSA'
+    exclude 'META-INF/**/*.RSA'
+
+    // we are only shadowing 'shadow' dependencies
+    configurations = [
+        project.configurations.shadow
+    ]
+
+    relocate 'com.google.common',       'repackaged.com.arakelian.jq.com.google.common'
+    relocate 'com.google.thirdparty',   'repackaged.com.arakelian.jq.com.google.thirdparty'
+    relocate 'javax.annotation',        'repackaged.com.arakelian.jq.javax.annotation'
+    relocate 'org.apache.commons',      'repackaged.com.arakelian.jq.org.apache.commons'
+    relocate 'org.checkerframework',    'repackaged.com.arakelian.jq.org.checkerframework'
+}
+
+minify {
+    // classes in this jar are minified and copied to output jar
+    injars shadowJar.archivePath
+    
+    // output jar
+    outjars project.ext.minifyJarFile
+    
+    // jars required on classpath at runtime, including Java runtime
+    libraryjars project.ext.libraryJars()
+
+    // classes that we need to keep
+    keep includedescriptorclasses:true, 'class com.arakelian.** { *; }'
+    keep includedescriptorclasses:true, 'class com.sun.jna.** { *; }'
+    dontwarn 'com.sun.jna.**'
 }

@@ -1,4 +1,6 @@
 # java-jq
+[![version](https://img.shields.io/maven-metadata/v.svg?label=release&metadataUrl=https://repo1.maven.org/maven2/com/arakelian/java-jq/maven-metadata.xml)](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.arakelian%22%20AND%20a%3A%22java-jq%22)
+[![CI](https://github.com/arakelian/java-jq/actions/workflows/ci.yml/badge.svg)](https://github.com/arakelian/java-jq/actions/workflows/ci.yml)
 
 java-jq is not a re-implementation of [jq](http://stedolan.github.io/jq/) in Java; instead, 
 it embeds the necessary jq and Oniguruma native libraries in a jar file, and then uses 

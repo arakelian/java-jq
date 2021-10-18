@@ -1,0 +1,430 @@
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.guardsquare:proguard-gradle:7.1.0'  // The ProGuard Gradle plugin.
+    }
+}
+
+
+ext {
+    // useful macros, you can add your own
+    macros = [
+        'all' : [
+            'clean',
+            'classpath',
+            'build',
+            'minify',
+            'generatePomFileForInternalPublication',    // needed to generate internal POM
+            'publishMavenJavaPublicationToMavenLocal'   // real publication to Maven Local (~/.m2/repository)
+        ],
+        'sonatype' : [
+            'generatePomFileForInternalPublication',
+            'publishMavenJavaPublicationToOssrhRepository',
+            'closeAndReleaseRepository'
+        ],
+        'deploy' : [
+            'uploadArchives',
+            'closeAndReleaseRepository'
+        ],
+        'classpath' : [
+            'cleanEclipseClasspath',
+            'eclipseClasspath',
+            'eclipseFactoryPath',
+            'cleanIdeaModule',
+            'ideaModule'
+        ],
+    ]
+    
+    // package patterns to exclude from Eclipse
+    excludeFromEclipse = []
+}
+
+
+// -------------------------------------------
+//  REPOSITORIES / PUBLISHING
+// -------------------------------------------
+
+repositories {
+    // prefer locally built artifacts
+    mavenLocal()
+
+    // use external repos as fallback
+    mavenCentral()
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar, dependsOn: classes) {
+    from javadoc
+    classifier = 'javadoc'
+}
+
+task testsJar(type:Jar, dependsOn: testClasses) {
+    from sourceSets.test.output
+    classifier = 'tests'
+}
+
+test {
+    // enable JUnit 5 tests
+    useJUnitPlatform()
+}
+
+
+// -------------------------------------------
+//  JAVA COMPILER
+// -------------------------------------------
+
+tasks.withType(JavaCompile) { task ->
+    sourceCompatibility = 8
+    targetCompatibility = 8
+
+    // always UTF-8
+    options.encoding = 'UTF-8'
+
+    // java 8 option which export names of constructor and method parameter names; no longer
+    // have to declare parameter names with @JsonCreator
+    options.compilerArgs << "-parameters"
+    
+    options.compilerArgs << '-Xlint:unchecked'
+
+    if (project.plugins.hasPlugin('net.ltgt.errorprone')) {
+        // Eclipse code formatting removes extraneous parenthesis which errorprone complains about
+        options.errorprone.disable 'OperatorPrecedence'
+        
+        // we don't need to check return value always
+        options.errorprone.disable 'FutureReturnValueIgnored'
+        
+        // generated code can have lots of bogus warnings
+        options.errorprone.disableWarningsInGeneratedCode = true
+        
+        // bogus warning
+        options.errorprone.disable 'StringSplitter'
+        
+        // ignore all generated source folders
+        options.errorprone.excludedPaths = '.*generated.*'
+    }
+}
+
+
+// -------------------------------------------
+//  SHADOW JAR
+// -------------------------------------------
+
+if(plugins.hasPlugin("com.github.johnrengelman.shadow")) {
+    jar {
+        classifier = "original"
+    }
+    
+    shadowJar {
+        classifier = "shadow"
+    }
+
+    sourceSets {
+        // shadow configuration is added by Shadow plugin, but it's only configured for the main sourceset
+        test.compileClasspath += configurations.shadow
+        test.runtimeClasspath += configurations.shadow
+    }
+}
+
+
+// -------------------------------------------
+//  PROGUARD
+// -------------------------------------------
+
+def hasProGuard = false
+
+try {
+    Class.forName("proguard.gradle.ProGuardTask", true, this.getClass().getClassLoader())
+    hasProGuard = true
+}
+catch(ClassNotFoundException e) {
+    // not found
+}
+
+if(hasProGuard) {
+    println "ProGuard enabled"
+    
+    task minify(type: proguard.gradle.ProGuardTask, dependsOn:shadowJar) {
+        // Preserve the special static methods that are required in all enumeration classes.
+        keepclassmembers allowoptimization:true, \
+            'enum * { \
+                <fields>; \
+                public static **[] values(); \
+                public static ** valueOf(java.lang.String); \
+            }'
+    
+        // Explicitly preserve all serialization members
+        keepclassmembers \
+            'class * implements java.io.Serializable { \
+                static final long serialVersionUID; \
+                static final java.io.ObjectStreamField[] serialPersistentFields; \
+                private void writeObject(java.io.ObjectOutputStream); \
+                private void readObject(java.io.ObjectInputStream); \
+                java.lang.Object writeReplace(); \
+                java.lang.Object readResolve(); \
+            }'
+    
+        keepclasseswithmembernames includedescriptorclasses:true, 'class * { native <methods>; }'
+    
+        keepattributes 'Exceptions'
+        keepattributes 'InnerClasses'
+        keepattributes 'Signature'
+        keepattributes 'Deprecated'
+        keepattributes 'SourceFile'
+        keepattributes 'LineNumberTable'
+        keepattributes '*Annotation*'
+        keepattributes 'EnclosingMethod'
+    
+        // causes too many issues
+        dontoptimize
+        dontskipnonpubliclibraryclassmembers()
+        
+        // we're not interested in obfuscation, just code shrinking
+        dontobfuscate()
+    
+        // guava        
+        dontwarn 'sun.misc.Unsafe'
+    }
+
+    project.ext.libraryJars = { ->
+        // build list of shadowed artifacts (irrespective of version)
+        Set shadowedArtifacts = []
+        configurations.shadow.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            def id =  artifact.name + ":" + artifact.classifier
+            shadowedArtifacts.add id
+        }
+        
+        // ProGuard needs reference to JDK rt.jar
+        def javaHome = System.getProperty('java.home')
+        def jmods = project.fileTree (javaHome + "/jmods/") {
+            include "java.*.jmod"
+            exclude "java.se.jmod"
+            exclude "java.se.ee.jmod"
+            exclude "jdk.jdwp.agent"
+        }
+        
+        def libJars = []
+        libJars += jmods
+        
+        // ProGuard needs reference to jars that we didn't shadow
+        configurations.api.canBeResolved = true
+        configurations.api.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            def id =  artifact.name + ":" + artifact.classifier
+            if(!shadowedArtifacts.contains(id)) {
+                libJars.add artifact.file
+            }
+        }
+        
+        //println 'injars:  ' + shadowJar.archivePath
+        //println 'oujars:  ' + jar.archivePath
+        //println 'libjars: ' + libJars.join('\n         ')
+        return libJars
+    }
+    
+    project.ext.minifyJarFile = new File(jar.archivePath.getParentFile(), jar.archivePath.getName().replace("-original.jar",".jar"))
+    
+    project.ext.minifyJar = artifacts.add('archives', project.ext.minifyJarFile) {
+        type('jar')
+        builtBy(minify)
+    }
+
+    publishing {
+        publications {
+            // trick to capture dependencies
+            Node internalNode = null
+            internal(MavenPublication) {
+                from components.java
+                pom.withXml {
+                    internalNode = asNode()
+                }
+            }
+            
+            mavenJava(MavenPublication) {
+                // we DO NOT inherit from components.java because we don't want all the stuff that comes with it
+                artifact project.ext.minifyJar
+
+                // paste the dependencies into real POM
+                pom.withXml {
+                    Node pomNode = asNode()
+                    def dependencyNode = pomNode.appendNode("dependencies")
+                    dependencyNode.replaceNode(internalNode.dependencies)
+                }
+            }
+        }
+    }
+
+} else {
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {           
+                from components.java
+            }
+        }
+    }
+}
+
+publishing {
+    if(project.hasProperty('nexusUsername')) {
+        repositories {
+            maven {
+                name = "ossrh"
+                url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+                credentials {
+                    username = project.nexusUsername
+                    password = project.nexusPassword
+                }
+            }
+        }
+    }
+
+    publications {
+        mavenJava {
+            artifact sourcesJar
+            artifact javadocJar
+            artifact testsJar
+
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+nexusStaging {
+    repositoryDescription project.name
+}
+
+
+// -------------------------------------------
+//  ECLIPSE
+// -------------------------------------------
+
+eclipse {
+    classpath {
+        // override default 'bin'
+        defaultOutputDir = project.file('build/classes')
+
+        // we want source files
+        downloadSources = true
+        downloadJavadoc = false
+
+        // customize generated .classpath file
+        file {
+            def project_refs = []
+            def remove_entries = []
+
+            // closure executed after .classpath content is loaded from existing file
+            // and after gradle build information is merged
+            whenMerged { classpath ->
+
+                // build list of dependencies that we want to replace with Eclipse project refs
+                println 'Finding local projects'
+                def use_eclipse_project_refs = []
+                new File(project.projectDir, "..").eachDir {
+                    if(new File("${it}/build.gradle").exists()) {
+                        use_eclipse_project_refs.add it.name
+                    }
+                }
+
+                println 'Generating Eclipse .classpath file'
+                def kindOrder = [ 'src':1, 'con':2, 'lib':3, 'output':0 ];
+                classpath.entries.sort(true, { a,b ->
+                    def order = kindOrder[a.kind] <=> kindOrder[b.kind]
+                    order != 0 ? order : a.path <=> b.path
+                } as Comparator).each { entry ->
+                    if(entry.kind.equals('lib')) {
+                        use_eclipse_project_refs.each { name ->
+                            def regex = '/(' + ( name.endsWith('-') ?
+                                    java.util.regex.Pattern.quote(name.substring(0,name.length()-1)) + '(?:-[A-Za-z]+)*'
+                                    : java.util.regex.Pattern.quote(name) ) + ')-([\\w\\.]+?)(-[A-Za-z]+)?\\.jar$'
+                            def pattern = java.util.regex.Pattern.compile(regex)
+                            def matcher = pattern.matcher(entry.path)
+                            if(matcher.find()) {
+                                def match = matcher.group(1)
+                                println match + ' (' + matcher.group(2) + ') matched ' + entry.path
+                                remove_entries += [entry]
+                                project_refs += [match]
+                            }
+                        }
+                        entry.exported = true
+                    } else if(entry.kind.equals('src')) {
+                        project.ext.excludeFromEclipse.each { path ->
+                            if(entry.path.equals(path)) {
+                                remove_entries += [entry]
+                             }
+                         }
+                        if(entry.output.startsWith("bin/")) {
+                            entry.output = "build/" + entry.output.substring(4)
+                        }
+                    }
+                }
+                classpath.entries.removeAll(remove_entries)
+            }
+
+            // final adjustments to .classpath file before it is saved
+            withXml { xml ->
+                def node = xml.asNode()
+                
+                project_refs.unique(false).each { name ->
+                    println "Creating Eclipse project dependency: " + name
+                    node.appendNode('classpathentry', [ combineaccessrules: false, exported: true, kind: 'src', path: '/' + name ])
+                }
+                
+                def apt = ['.apt_generated_test': 'build/test',
+                           '.apt_generated':      'build/main']
+                           
+                apt.each { path, output ->
+                    def atts = node.appendNode('classpathentry', [kind:'src', output: output, path: path]).appendNode('attributes')
+                    atts.appendNode('attribute', [name: 'ignore_optional_problems', value: true])
+                    atts.appendNode('attribute', [name: 'test', value: output.contains('test')])
+                    atts.appendNode('attribute', [name: 'optional', value: true])
+                }
+            }
+        }
+    }
+}
+
+
+// -------------------------------------------
+//  SHORTCUT TASKS
+// -------------------------------------------
+
+
+// This code allows us to define aliases, such as "all", so that when we do "gradle all",
+// we can substitute in a series of other gradle tasks
+// see: https://caffeineinduced.wordpress.com/2015/01/25/run-a-list-of-gradle-tasks-in-specific-order/
+def newTasks = []
+
+// gradle respects ordering of tasks specified on command line, so we replace shortcuts
+// with equivalent commands as though they were specified by user
+gradle.startParameter.taskNames.each { param ->
+    def macro = project.ext.macros[param]
+    if( macro ) {
+        macro.each { task ->
+            if(project.tasks.names.contains(task)) {
+                newTasks << task
+            }
+        }
+    } else {
+        newTasks << param
+    }
+}
+
+// replace command line arguments
+gradle.startParameter.taskNames = newTasks.flatten()
+ 

@@ -34,7 +34,6 @@ import java.util.logging.LogManager;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opentest4j.AssertionFailedError;
 
 import com.arakelian.jq.JqRequest.Indent;
 import com.google.common.base.Charsets;
@@ -42,6 +41,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 
+import junit.framework.AssertionFailedError;
 import net.javacrumbs.jsonunit.JsonAssert;
 
 public abstract class AbstractJqTest {
