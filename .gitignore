@@ -101,3 +101,4 @@ dist/
 
 # Grunt usually preprocesses files such as coffeescript, compass... inside the .tmp directory
 .tmp/
+/.apt_generated_tests/

@@ -32,7 +32,6 @@ import org.immutables.value.Value;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
 import com.sun.jna.NativeLibrary;
 import com.sun.jna.Platform;
 
@@ -159,8 +158,15 @@ public abstract class NativeLib {
     @Value.Auxiliary
     public File getTemporaryFolder() throws UncheckedIOException {
         // must create a temp directory, required for NativeLibrary.addSearchPath
-        final File tmpdir = Files.createTempDir();
-        // tmpdir.deleteOnExit();
-        return tmpdir;
+        File baseDir = new File(System.getProperty("java.io.tmpdir"));
+        String baseName = System.currentTimeMillis() + "-";
+
+        for (int counter = 0; counter < 10000; counter++) {
+            File tmpDir = new File(baseDir, baseName + counter);
+            if (tmpDir.mkdir()) {
+                return tmpDir;
+            }
+        }
+        throw new IllegalStateException("Failed to create temp directory");
     }
 }

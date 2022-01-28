@@ -91,7 +91,7 @@ Add the following to your `pom.xml`:
 <dependency>
     <groupId>com.arakelian</groupId>
     <artifactId>java-jq</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -106,7 +106,7 @@ repositories {
 }
 
 dependencies {
-  testCompile 'com.arakelian:java-jq:1.2.0'
+  testCompile 'com.arakelian:java-jq:1.3.0'
 }
 ```
 
