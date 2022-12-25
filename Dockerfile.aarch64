@@ -1,0 +1,19 @@
+FROM debian:buster-slim
+LABEL "description"="Docker image for building libjq"
+LABEL "author"="nicolae.natea"
+
+WORKDIR /home
+RUN apt-get update && apt-get install -y build-essential autoconf automake libtool curl
+ADD https://github.com/stedolan/jq/releases/download/jq-1.6/jq-1.6.tar.gz .
+ADD https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff flat_namespace.patch
+RUN tar --extract --file "jq-1.6.tar.gz" && \
+    cd /home/jq-1.6/modules/oniguruma    && \
+    autoreconf -fi                       && \
+    cd /home/jq-1.6                      && \
+    patch < /home/flat_namespace.patch   && \
+    autoreconf -fi                       && \
+    CPPFLAGS="-D_REENTRANT -fPIC" ./configure --prefix="$INSTALL_BASE" --disable-maintainer-mode --disable-docs --with-oniguruma=builtin && \
+    make -j4
+RUN gcc -shared -o libjq.so -Wl,--whole-archive jq-1.6/modules/oniguruma/src/.libs/libonig.a jq-1.6/.libs/libjq.a -Wl,--no-whole-archive
+    
+# Option to make all static: make LDFLAGS=-all-static

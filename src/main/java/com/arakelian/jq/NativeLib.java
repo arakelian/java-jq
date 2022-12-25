@@ -145,6 +145,8 @@ public abstract class NativeLib {
                 return "linux-ia64/";
             } else if ("i386".equalsIgnoreCase(osArch)) {
                 return "linux-x86/";
+            } else if ("aarch64".equalsIgnoreCase(osArch)) {
+                return "linux-aarch64/";
             }
         } else if (Platform.isMac()) {
             if ("x86_64".equalsIgnoreCase("x86_64")) {
