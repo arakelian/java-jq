@@ -149,8 +149,10 @@ public abstract class NativeLib {
                 return "linux-aarch64/";
             }
         } else if (Platform.isMac()) {
-            if ("x86_64".equalsIgnoreCase("x86_64")) {
+            if ("x86_64".equalsIgnoreCase(osArch)) {
                 return "darwin-x86_64/";
+            } else if ("aarch64".equalsIgnoreCase(osArch)) {
+                return "darwin-aarch64/";
             }
         }
         throw new IllegalStateException("Unsupported architecture: " + getArchitecture());
