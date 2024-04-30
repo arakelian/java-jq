@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Logger;
 
 import org.immutables.value.Value;
@@ -122,13 +123,13 @@ public abstract class NativeLib {
     @Value.Derived
     public String getOsArch() {
         final String arch = System.getProperty("os.arch");
-        return arch != null ? arch.toLowerCase() : "";
+        return arch != null ? arch.toLowerCase(Locale.ROOT) : "";
     }
 
     @Value.Derived
     public String getOsName() {
         final String name = System.getProperty("os.name");
-        return name != null ? name.toLowerCase() : "";
+        return name != null ? name.toLowerCase(Locale.ROOT) : "";
     }
 
     @Value.Derived
@@ -149,7 +150,9 @@ public abstract class NativeLib {
                 return "linux-aarch64/";
             }
         } else if (Platform.isMac()) {
-            if ("x86_64".equalsIgnoreCase("x86_64")) {
+            if ("aarch64".equalsIgnoreCase("x86_64")) {
+                return "darwin-aarch64/";
+            } else if ("x86_64".equalsIgnoreCase("x86_64")) {
                 return "darwin-x86_64/";
             }
         }

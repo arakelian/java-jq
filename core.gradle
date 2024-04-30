@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.guardsquare:proguard-gradle:7.1.0'  // The ProGuard Gradle plugin.
+        classpath 'com.guardsquare:proguard-gradle:7.2.1'  // The ProGuard Gradle plugin.
     }
 }
 
@@ -56,18 +56,18 @@ repositories {
 }
 
 task sourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
     from sourceSets.main.allJava
-    classifier = 'sources'
 }
 
 task javadocJar(type: Jar, dependsOn: classes) {
+    archiveClassifier.set('javadoc')
     from javadoc
-    classifier = 'javadoc'
 }
 
 task testsJar(type:Jar, dependsOn: testClasses) {
+    archiveClassifier.set('tests')
     from sourceSets.test.output
-    classifier = 'tests'
 }
 
 test {
@@ -81,8 +81,8 @@ test {
 // -------------------------------------------
 
 tasks.withType(JavaCompile) { task ->
-    sourceCompatibility = 8
-    targetCompatibility = 8
+    sourceCompatibility = 11
+    targetCompatibility = 11
 
     // always UTF-8
     options.encoding = 'UTF-8'
@@ -118,11 +118,11 @@ tasks.withType(JavaCompile) { task ->
 
 if(plugins.hasPlugin("com.github.johnrengelman.shadow")) {
     jar {
-        classifier = "original"
+        archiveClassifier.set('original')
     }
     
     shadowJar {
-        classifier = "shadow"
+        archiveClassifier.set('shadow')
     }
 
     sourceSets {
@@ -133,138 +133,10 @@ if(plugins.hasPlugin("com.github.johnrengelman.shadow")) {
 }
 
 
-// -------------------------------------------
-//  PROGUARD
-// -------------------------------------------
-
-def hasProGuard = false
-
-try {
-    Class.forName("proguard.gradle.ProGuardTask", true, this.getClass().getClassLoader())
-    hasProGuard = true
-}
-catch(ClassNotFoundException e) {
-    // not found
-}
-
-if(hasProGuard) {
-    println "ProGuard enabled"
-    
-    task minify(type: proguard.gradle.ProGuardTask, dependsOn:shadowJar) {
-        // Preserve the special static methods that are required in all enumeration classes.
-        keepclassmembers allowoptimization:true, \
-            'enum * { \
-                <fields>; \
-                public static **[] values(); \
-                public static ** valueOf(java.lang.String); \
-            }'
-    
-        // Explicitly preserve all serialization members
-        keepclassmembers \
-            'class * implements java.io.Serializable { \
-                static final long serialVersionUID; \
-                static final java.io.ObjectStreamField[] serialPersistentFields; \
-                private void writeObject(java.io.ObjectOutputStream); \
-                private void readObject(java.io.ObjectInputStream); \
-                java.lang.Object writeReplace(); \
-                java.lang.Object readResolve(); \
-            }'
-    
-        keepclasseswithmembernames includedescriptorclasses:true, 'class * { native <methods>; }'
-    
-        keepattributes 'Exceptions'
-        keepattributes 'InnerClasses'
-        keepattributes 'Signature'
-        keepattributes 'Deprecated'
-        keepattributes 'SourceFile'
-        keepattributes 'LineNumberTable'
-        keepattributes '*Annotation*'
-        keepattributes 'EnclosingMethod'
-    
-        // causes too many issues
-        dontoptimize
-        dontskipnonpubliclibraryclassmembers()
-        
-        // we're not interested in obfuscation, just code shrinking
-        dontobfuscate()
-    
-        // guava        
-        dontwarn 'sun.misc.Unsafe'
-    }
-
-    project.ext.libraryJars = { ->
-        // build list of shadowed artifacts (irrespective of version)
-        Set shadowedArtifacts = []
-        configurations.shadow.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-            def id =  artifact.name + ":" + artifact.classifier
-            shadowedArtifacts.add id
-        }
-        
-        // ProGuard needs reference to JDK rt.jar
-        def javaHome = System.getProperty('java.home')
-        def jmods = project.fileTree (javaHome + "/jmods/") {
-            include "java.*.jmod"
-            exclude "java.se.jmod"
-            exclude "java.se.ee.jmod"
-            exclude "jdk.jdwp.agent"
-        }
-        
-        def libJars = []
-        libJars += jmods
-        
-        // ProGuard needs reference to jars that we didn't shadow
-        configurations.api.canBeResolved = true
-        configurations.api.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-            def id =  artifact.name + ":" + artifact.classifier
-            if(!shadowedArtifacts.contains(id)) {
-                libJars.add artifact.file
-            }
-        }
-        
-        //println 'injars:  ' + shadowJar.archivePath
-        //println 'oujars:  ' + jar.archivePath
-        //println 'libjars: ' + libJars.join('\n         ')
-        return libJars
-    }
-    
-    project.ext.minifyJarFile = new File(jar.archivePath.getParentFile(), jar.archivePath.getName().replace("-original.jar",".jar"))
-    
-    project.ext.minifyJar = artifacts.add('archives', project.ext.minifyJarFile) {
-        type('jar')
-        builtBy(minify)
-    }
-
-    publishing {
-        publications {
-            // trick to capture dependencies
-            Node internalNode = null
-            internal(MavenPublication) {
-                from components.java
-                pom.withXml {
-                    internalNode = asNode()
-                }
-            }
-            
-            mavenJava(MavenPublication) {
-                // we DO NOT inherit from components.java because we don't want all the stuff that comes with it
-                artifact project.ext.minifyJar
-
-                // paste the dependencies into real POM
-                pom.withXml {
-                    Node pomNode = asNode()
-                    def dependencyNode = pomNode.appendNode("dependencies")
-                    dependencyNode.replaceNode(internalNode.dependencies)
-                }
-            }
-        }
-    }
-
-} else {
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {           
-                from components.java
-            }
+publishing {
+    publications {
+        mavenJava(MavenPublication) {           
+            from components.java
         }
     }
 }
@@ -317,7 +189,7 @@ nexusStaging {
 eclipse {
     classpath {
         // override default 'bin'
-        defaultOutputDir = project.file('build/classes')
+        defaultOutputDir = project.file('bin/classes')
 
         // we want source files
         downloadSources = true
@@ -368,9 +240,6 @@ eclipse {
                                 remove_entries += [entry]
                              }
                          }
-                        if(entry.output.startsWith("bin/")) {
-                            entry.output = "build/" + entry.output.substring(4)
-                        }
                     }
                 }
                 classpath.entries.removeAll(remove_entries)
@@ -385,8 +254,8 @@ eclipse {
                     node.appendNode('classpathentry', [ combineaccessrules: false, exported: true, kind: 'src', path: '/' + name ])
                 }
                 
-                def apt = ['.apt_generated_test': 'build/test',
-                           '.apt_generated':      'build/main']
+                def apt = ['.apt_generated_test': 'bin/test',
+                           '.apt_generated':      'bin/main']
                            
                 apt.each { path, output ->
                     def atts = node.appendNode('classpathentry', [kind:'src', output: output, path: path]).appendNode('attributes')
